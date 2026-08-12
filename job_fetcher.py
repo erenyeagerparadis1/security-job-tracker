@@ -68,7 +68,11 @@ def get_teamblind_score(company_name: str) -> str:
     search_url = f"https://www.teamblind.com/search/{urllib.parse.quote(clean_company)}"
 
     try:
-        response = requests.get(search_url, headers=HEADERS, timeout=(4, 6))
+        response = requests.get(search_url, headers=HEADERS, timeout=(15, 15))
+        if response.status_code != 200:
+            log_audit("BLIND BLOCK", f"HTTP {response.status_code} (Cloudflare block) for '{clean_company}'")
+            TEAMBLIND_CACHE[norm_key] = "N/A"
+            return "N/A"
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
 
