@@ -7,12 +7,13 @@ import requests
 from bs4 import BeautifulSoup
 from jinja2 import Template
 
-# User Configuration
+# Configured Target Titles
 TARGET_TITLES = [
     "Security Engineer",
     "Application Security Engineer"
 ]
 
+# Configured Locations (US excluded)
 TARGET_LOCATIONS = [
     "Bengaluru, India",
     "Hyderabad, India",
@@ -37,18 +38,25 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# In-memory cache for TeamBlind scores across all runs
+# In-memory global cache for TeamBlind ratings
 TEAMBLIND_CACHE = {}
 
 
 def log_audit(category: str, message: str):
-    """Prints timestamped, formatted audit logs."""
+    """Prints timestamped audit logs."""
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"[{timestamp}] [{category:<14}] {message}")
 
 
+def is_security_role(title: str) -> bool:
+    """Validates that the job title contains security keywords."""
+    clean_title = title.lower()
+    security_keywords = ["security", "secops", "cybersecurity", "infosec", "securityanalyst"]
+    return any(kw in clean_title for kw in security_keywords)
+
+
 def get_teamblind_score(company_name: str) -> str:
-    """Fetches company rating from TeamBlind or reuses cached result."""
+    """Fetches company rating from TeamBlind search using the DOM structure from DevTools snapshot."""
     clean_company = company_name.strip()
     norm_key = clean_company.lower()
 
@@ -56,26 +64,37 @@ def get_teamblind_score(company_name: str) -> str:
         log_audit("BLIND CACHE", f"Hit for '{clean_company}' -> {TEAMBLIND_CACHE[norm_key]}")
         return TEAMBLIND_CACHE[norm_key]
 
-    log_audit("BLIND FETCH", f"Querying TeamBlind for: '{clean_company}'")
+    log_audit("BLIND FETCH", f"Querying TeamBlind search for: '{clean_company}'")
     search_url = f"https://www.teamblind.com/search/{urllib.parse.quote(clean_company)}"
 
     try:
         response = requests.get(search_url, headers=HEADERS, timeout=(4, 6))
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
+
+            # 1. Find company link
             company_link = soup.find("a", href=re.compile(r"^/company/"))
             if company_link:
-                parent_div = company_link.find_parent("div")
-                if parent_div:
-                    score_div = parent_div.find("div", class_=re.compile(r"flex.*text-sm", re.I))
-                    if score_div:
-                        score_text = score_div.get_text(strip=True)
+                parent = company_link.find_parent("div")
+                if parent:
+                    # 2. Target <div class="flex text-sm">
+                    rating_container = parent.find("div", class_=lambda c: c and "flex" in c and "text-sm" in c)
+                    if rating_container:
+                        score_text = rating_container.get_text(strip=True)
                         match = re.search(r"(\d\.\d)", score_text)
                         if match:
                             score = f"★ {match.group(1)}"
                             TEAMBLIND_CACHE[norm_key] = score
                             log_audit("BLIND SUCCESS", f"Retrieved '{clean_company}': {score}")
                             return score
+
+            # Fallback regex search
+            score_match = re.search(r'href="/company/[^"]*"[^>]*>.*?<div[^>]*class="[^"]*flex[^"]*text-sm[^"]*"[^>]*>.*?([1-5]\.\d)', response.text, re.DOTALL | re.IGNORECASE)
+            if score_match:
+                score = f"★ {score_match.group(1)}"
+                TEAMBLIND_CACHE[norm_key] = score
+                log_audit("BLIND SUCCESS", f"Retrieved '{clean_company}': {score}")
+                return score
 
     except requests.exceptions.Timeout:
         log_audit("BLIND WARN", f"Timeout fetching TeamBlind score for '{clean_company}'")
@@ -87,7 +106,7 @@ def get_teamblind_score(company_name: str) -> str:
 
 
 def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 50) -> list:
-    """Scrapes LinkedIn Guest API with pagination, non-blocking timeouts, and logging."""
+    """Scrapes LinkedIn Guest API with security filtering, pagination, and non-blocking timeouts."""
     base_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
     jobs = []
     start = 0
@@ -110,7 +129,7 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
                 log_audit("LINKEDIN WARN", f"Rate limited (HTTP 429) at start={start}. Skipping.")
                 break
             elif response.status_code != 200:
-                log_audit("LINKEDIN WARN", f"HTTP {response.status_code} at start={start}. Skipping.")
+                log_audit("LINKEDIN WARN", f"HTTP {response.status_code} at start={start}. Terminating query.")
                 break
 
             soup = BeautifulSoup(response.text, "html.parser")
@@ -129,11 +148,18 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
                 date_elem = card.find("time")
 
                 if title_elem and company_elem and link_elem:
+                    job_title = title_elem.text.strip()
+
+                    # Filter out non-security job titles
+                    if not is_security_role(job_title):
+                        log_audit("FILTER EXCLUDE", f"Skipped non-security role: '{job_title}'")
+                        continue
+
                     company_name = company_elem.text.strip()
                     job_link = link_elem["href"].split("?")[0]
 
                     job_data = {
-                        "title": title_elem.text.strip(),
+                        "title": job_title,
                         "company": company_name,
                         "location": location_elem.text.strip() if location_elem else location,
                         "link": job_link,
@@ -146,13 +172,13 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
                     if len(jobs) >= max_results_per_query:
                         break
 
-            log_audit("PAGE FETCHED", f"Offset {start}: parsed {parsed_in_page} jobs (Total collected: {len(jobs)})")
+            log_audit("PAGE FETCHED", f"Offset {start}: parsed {parsed_in_page} security jobs (Total: {len(jobs)})")
 
             if parsed_in_page == 0:
                 break
 
             start += page_size
-            time.sleep(1.5)
+            time.sleep(1.2)
 
         except requests.exceptions.Timeout:
             log_audit("TIMEOUT", f"LinkedIn request timed out at start={start} for '{location}'.")
@@ -161,7 +187,7 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
             log_audit("ERROR", f"Error during pagination for '{location}': {e}")
             break
 
-    log_audit("SEARCH COMPLETE", f"Found {len(jobs)} jobs for '{title}' in '{location}'")
+    log_audit("SEARCH COMPLETE", f"Found {len(jobs)} security jobs for '{title}' in '{location}'")
     return jobs
 
 
@@ -173,7 +199,7 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Daily Security Jobs Monitor</title>
+        <title>Daily Security Engineering Jobs</title>
         <style>
             :root {
                 --bg: #0f172a;
@@ -198,7 +224,6 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
                 margin-bottom: 1rem;
             }
 
-            /* Metrics Section */
             .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
             .metric-card { background: var(--card-bg); border: 1px solid var(--border); padding: 0.75rem 1rem; border-radius: 6px; }
             .metric-card .loc-name { font-size: 0.8rem; color: #94a3b8; }
@@ -209,7 +234,6 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
             th { background-color: #0284c7; color: white; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
             tr:hover { background-color: #334155; }
             
-            /* Column Filter Inputs */
             .col-filter {
                 width: 100%;
                 padding: 0.4rem 0.5rem;
@@ -234,7 +258,7 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
         <div class="subtitle">Generated on {{ timestamp }}</div>
 
         <div class="counter-badge">
-            Showing <span id="visibleCount">{{ total_jobs }}</span> of {{ total_jobs }} total jobs
+            Showing <span id="visibleCount">{{ total_jobs }}</span> of {{ total_jobs }} total security jobs
         </div>
 
         <h2>Location Breakdown</h2>
@@ -252,11 +276,11 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
                 <tr>
                     <th>
                         Job Title
-                        <input type="text" id="filterTitle" class="col-filter" onkeyup="filterTable()" placeholder="Search title...">
+                        <input type="text" id="filterTitle" class="col-filter" onkeyup="filterTable()" placeholder="Filter title...">
                     </th>
                     <th>
                         Company
-                        <input type="text" id="filterCompany" class="col-filter" onkeyup="filterTable()" placeholder="Search company...">
+                        <input type="text" id="filterCompany" class="col-filter" onkeyup="filterTable()" placeholder="Filter company...">
                     </th>
                     <th>
                         TeamBlind Score
@@ -264,7 +288,7 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
                     </th>
                     <th>
                         Location
-                        <input type="text" id="filterLocation" class="col-filter" onkeyup="filterTable()" placeholder="Search location...">
+                        <input type="text" id="filterLocation" class="col-filter" onkeyup="filterTable()" placeholder="Filter location...">
                     </th>
                     <th>
                         Posted
@@ -281,7 +305,7 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
                     <td><span class="score">{{ job.blind_score }}</span></td>
                     <td><span class="badge">{{ job.location }}</span></td>
                     <td>{{ job.posted }}</td>
-                    <td><a href="{{ job.link }}" target="_blank">View Job &rarr;</a></td>
+                    <td><a href="{{ job.link }}" target="_blank">View Listing &rarr;</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -319,7 +343,6 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
                     }
                 });
 
-                // Update real-time results counter
                 document.getElementById('visibleCount').innerText = visibleCount;
             }
         </script>
@@ -338,12 +361,12 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
         timestamp=timestamp_str
     )
 
-    # Save primary index.html
+    # Write primary dashboard
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(rendered_html)
     log_audit("HTML REPORT", f"Updated primary dashboard: {output_filename}")
 
-    # Save historical archive copy
+    # Write archive copy
     archive_dir = "archive"
     os.makedirs(archive_dir, exist_ok=True)
     archive_filename = os.path.join(archive_dir, f"index_{today_str}.html")
@@ -354,7 +377,7 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
 
 
 def main():
-    log_audit("SCRIPT INIT", "Starting Daily Job Collector...")
+    log_audit("SCRIPT INIT", "Starting Daily Security Job Collector...")
     all_jobs = []
     location_counts = {loc: 0 for loc in TARGET_LOCATIONS}
 
@@ -368,15 +391,15 @@ def main():
             location_jobs_count += len(jobs)
 
         location_counts[location] = location_jobs_count
-        log_audit("LOCATION DONE", f"{location} finished -> Total found: {location_jobs_count}")
+        log_audit("LOCATION DONE", f"{location} finished -> Total security jobs: {location_jobs_count}")
 
-    # Deduplicate entries by job URL
+    # Deduplicate entries by job link URL
     unique_jobs_map = {job["link"]: job for job in all_jobs}
     unique_jobs = list(unique_jobs_map.values())
 
     log_audit("SUMMARY", "========================================")
-    log_audit("SUMMARY", f"Total Jobs Collected: {len(all_jobs)}")
-    log_audit("SUMMARY", f"Unique Jobs (Deduplicated): {len(unique_jobs)}")
+    log_audit("SUMMARY", f"Total Valid Security Jobs Collected: {len(all_jobs)}")
+    log_audit("SUMMARY", f"Unique Security Jobs (Deduplicated): {len(unique_jobs)}")
     log_audit("SUMMARY", f"Unique Companies Cached on TeamBlind: {len(TEAMBLIND_CACHE)}")
     log_audit("SUMMARY", "========================================")
 
