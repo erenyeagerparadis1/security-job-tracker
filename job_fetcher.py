@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import json
 import urllib.parse
 from datetime import datetime
 import requests
@@ -18,9 +19,7 @@ TARGET_LOCATIONS = [
     "Bengaluru, India",
     "Hyderabad, India",
     "Chennai, India",
-    "Coimbatore, India",
     "Singapore",
-    "Malaysia",
     "Canada",
     "United Kingdom",
     "Australia",
@@ -38,7 +37,8 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# In-memory global cache for TeamBlind ratings
+# Persistent cache configuration
+CACHE_FILE = "teamblind_cache.json"
 TEAMBLIND_CACHE = {}
 
 
@@ -48,40 +48,60 @@ def log_audit(category: str, message: str):
     print(f"[{timestamp}] [{category:<14}] {message}")
 
 
+def load_cache():
+    """Loads existing TeamBlind scores from JSON cache file."""
+    global TEAMBLIND_CACHE
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                TEAMBLIND_CACHE = json.load(f)
+            log_audit("CACHE LOAD", f"Loaded {len(TEAMBLIND_CACHE)} cached company ratings from disk.")
+        except Exception as e:
+            log_audit("CACHE WARN", f"Failed reading cache file ({CACHE_FILE}): {e}")
+    else:
+        log_audit("CACHE INIT", f"No existing cache file found at {CACHE_FILE}. Starting fresh.")
+
+
+def save_cache():
+    """Saves updated TeamBlind scores to JSON cache file."""
+    try:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(TEAMBLIND_CACHE, f, indent=2, ensure_ascii=False)
+        log_audit("CACHE SAVE", f"Successfully saved {len(TEAMBLIND_CACHE)} company ratings to {CACHE_FILE}")
+    except Exception as e:
+        log_audit("CACHE ERROR", f"Failed saving cache file: {e}")
+
+
 def is_security_role(title: str) -> bool:
-    """Validates that the job title contains security keywords."""
+    """Strictly validates that the job title contains security keywords."""
     clean_title = title.lower()
     security_keywords = ["security", "secops", "cybersecurity", "infosec", "securityanalyst"]
     return any(kw in clean_title for kw in security_keywords)
 
 
 def get_teamblind_score(company_name: str) -> str:
-    """Fetches company rating from TeamBlind search using the DOM structure from DevTools snapshot."""
+    """Checks cache first; fetches from TeamBlind search if missing."""
     clean_company = company_name.strip()
     norm_key = clean_company.lower()
 
+    # Rule 1: Always check local/persistent cache first
     if norm_key in TEAMBLIND_CACHE:
         log_audit("BLIND CACHE", f"Hit for '{clean_company}' -> {TEAMBLIND_CACHE[norm_key]}")
         return TEAMBLIND_CACHE[norm_key]
 
-    log_audit("BLIND FETCH", f"Querying TeamBlind search for: '{clean_company}'")
+    log_audit("BLIND FETCH", f"Cache miss. Querying TeamBlind search for: '{clean_company}'")
     search_url = f"https://www.teamblind.com/search/{urllib.parse.quote(clean_company)}"
 
     try:
-        response = requests.get(search_url, headers=HEADERS, timeout=(15, 15))
-        if response.status_code != 200:
-            log_audit("BLIND BLOCK", f"HTTP {response.status_code} (Cloudflare block) for '{clean_company}'")
-            TEAMBLIND_CACHE[norm_key] = "N/A"
-            return "N/A"
+        response = requests.get(search_url, headers=HEADERS, timeout=(4, 6))
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # 1. Find company link
+            # Method 1: DOM traversal for /company/ link
             company_link = soup.find("a", href=re.compile(r"^/company/"))
             if company_link:
                 parent = company_link.find_parent("div")
                 if parent:
-                    # 2. Target <div class="flex text-sm">
                     rating_container = parent.find("div", class_=lambda c: c and "flex" in c and "text-sm" in c)
                     if rating_container:
                         score_text = rating_container.get_text(strip=True)
@@ -89,16 +109,19 @@ def get_teamblind_score(company_name: str) -> str:
                         if match:
                             score = f"★ {match.group(1)}"
                             TEAMBLIND_CACHE[norm_key] = score
-                            log_audit("BLIND SUCCESS", f"Retrieved '{clean_company}': {score}")
+                            log_audit("BLIND SUCCESS", f"Retrieved & cached '{clean_company}': {score}")
                             return score
 
-            # Fallback regex search
+            # Method 2: Fallback regex pattern search
             score_match = re.search(r'href="/company/[^"]*"[^>]*>.*?<div[^>]*class="[^"]*flex[^"]*text-sm[^"]*"[^>]*>.*?([1-5]\.\d)', response.text, re.DOTALL | re.IGNORECASE)
             if score_match:
                 score = f"★ {score_match.group(1)}"
                 TEAMBLIND_CACHE[norm_key] = score
-                log_audit("BLIND SUCCESS", f"Retrieved '{clean_company}': {score}")
+                log_audit("BLIND SUCCESS", f"Retrieved & cached '{clean_company}': {score}")
                 return score
+
+        else:
+            log_audit("BLIND BLOCK", f"HTTP {response.status_code} response for '{clean_company}'")
 
     except requests.exceptions.Timeout:
         log_audit("BLIND WARN", f"Timeout fetching TeamBlind score for '{clean_company}'")
@@ -365,12 +388,12 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
         timestamp=timestamp_str
     )
 
-    # Write primary dashboard
+    # Primary dashboard write
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(rendered_html)
     log_audit("HTML REPORT", f"Updated primary dashboard: {output_filename}")
 
-    # Write archive copy
+    # Archive copy write
     archive_dir = "archive"
     os.makedirs(archive_dir, exist_ok=True)
     archive_filename = os.path.join(archive_dir, f"index_{today_str}.html")
@@ -381,6 +404,8 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
 
 
 def main():
+    load_cache()  # 1. Load persistent JSON cache from disk
+
     log_audit("SCRIPT INIT", "Starting Daily Security Job Collector...")
     all_jobs = []
     location_counts = {loc: 0 for loc in TARGET_LOCATIONS}
@@ -404,10 +429,12 @@ def main():
     log_audit("SUMMARY", "========================================")
     log_audit("SUMMARY", f"Total Valid Security Jobs Collected: {len(all_jobs)}")
     log_audit("SUMMARY", f"Unique Security Jobs (Deduplicated): {len(unique_jobs)}")
-    log_audit("SUMMARY", f"Unique Companies Cached on TeamBlind: {len(TEAMBLIND_CACHE)}")
+    log_audit("SUMMARY", f"Unique Companies Cached in Memory: {len(TEAMBLIND_CACHE)}")
     log_audit("SUMMARY", "========================================")
 
     generate_html_report(unique_jobs, location_counts)
+    
+    save_cache()  # 2. Save cache back to disk with any newly discovered scores
 
 
 if __name__ == "__main__":
