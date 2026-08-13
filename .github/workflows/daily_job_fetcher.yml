@@ -2,35 +2,34 @@ name: Daily Job Fetcher
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # Daily at 08:00 UTC
+    - cron: '0 8 * * *'  # Runs daily at 8:00 AM UTC
   workflow_dispatch:
 
 permissions:
-  contents: write        # Explicitly grant permission to push to gh-pages branch
+  contents: write  # Grants permission to commit changes back to the repository
 
 jobs:
-  build:
+  build-and-run:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 jinja2
+      - name: Install Dependencies
+        run: pip install requests beautifulsoup4 jinja2
 
-      - name: Run Scraper
+      - name: Run Job Fetcher
         run: python job_fetcher.py
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          keep_files: true
+      - name: Commit HTML and Cache Updates
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add index.html archive/ teamblind_cache.json
+          git commit -m "Auto-update job dashboard and TeamBlind cache" || echo "No changes to commit"
+          git push
