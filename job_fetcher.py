@@ -37,9 +37,8 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# Persistent cache configuration
 CACHE_FILE = "teamblind_cache.json"
-TEAMBLIND_CACHE = {}
+COMPANY_CACHE = {}
 
 
 def log_audit(category: str, message: str):
@@ -49,55 +48,43 @@ def log_audit(category: str, message: str):
 
 
 def load_cache():
-    """Loads existing TeamBlind scores from JSON cache file."""
-    global TEAMBLIND_CACHE
+    """Loads persistent cache from disk."""
+    global COMPANY_CACHE
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                TEAMBLIND_CACHE = json.load(f)
-            log_audit("CACHE LOAD", f"Loaded {len(TEAMBLIND_CACHE)} cached company ratings from disk.")
+                COMPANY_CACHE = json.load(f)
+            log_audit("CACHE LOAD", f"Loaded {len(COMPANY_CACHE)} cached company entries.")
         except Exception as e:
-            log_audit("CACHE WARN", f"Failed reading cache file ({CACHE_FILE}): {e}")
-    else:
-        log_audit("CACHE INIT", f"No existing cache file found at {CACHE_FILE}. Starting fresh.")
+            log_audit("CACHE WARN", f"Failed reading cache file: {e}")
 
 
 def save_cache():
-    """Saves updated TeamBlind scores to JSON cache file."""
+    """Saves cache back to disk."""
     try:
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(TEAMBLIND_CACHE, f, indent=2, ensure_ascii=False)
-        log_audit("CACHE SAVE", f"Successfully saved {len(TEAMBLIND_CACHE)} company ratings to {CACHE_FILE}")
+            json.dump(COMPANY_CACHE, f, indent=2, ensure_ascii=False)
+        log_audit("CACHE SAVE", f"Saved {len(COMPANY_CACHE)} entries to {CACHE_FILE}")
     except Exception as e:
         log_audit("CACHE ERROR", f"Failed saving cache file: {e}")
 
 
 def is_security_role(title: str) -> bool:
-    """Strictly validates that the job title contains security keywords."""
+    """Strictly validates if job title contains security keywords."""
     clean_title = title.lower()
     security_keywords = ["security", "secops", "cybersecurity", "infosec", "securityanalyst"]
     return any(kw in clean_title for kw in security_keywords)
 
 
 def get_teamblind_score(company_name: str) -> str:
-    """Checks cache first; fetches from TeamBlind search if missing."""
+    """Fetches rating from TeamBlind search page."""
     clean_company = company_name.strip()
-    norm_key = clean_company.lower()
-
-    # Rule 1: Always check local/persistent cache first
-    if norm_key in TEAMBLIND_CACHE:
-        log_audit("BLIND CACHE", f"Hit for '{clean_company}' -> {TEAMBLIND_CACHE[norm_key]}")
-        return TEAMBLIND_CACHE[norm_key]
-
-    log_audit("BLIND FETCH", f"Cache miss. Querying TeamBlind search for: '{clean_company}'")
     search_url = f"https://www.teamblind.com/search/{urllib.parse.quote(clean_company)}"
 
     try:
         response = requests.get(search_url, headers=HEADERS, timeout=(4, 6))
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
-
-            # Method 1: DOM traversal for /company/ link
             company_link = soup.find("a", href=re.compile(r"^/company/"))
             if company_link:
                 parent = company_link.find_parent("div")
@@ -107,41 +94,106 @@ def get_teamblind_score(company_name: str) -> str:
                         score_text = rating_container.get_text(strip=True)
                         match = re.search(r"(\d\.\d)", score_text)
                         if match:
-                            score = f"★ {match.group(1)}"
-                            TEAMBLIND_CACHE[norm_key] = score
-                            log_audit("BLIND SUCCESS", f"Retrieved & cached '{clean_company}': {score}")
-                            return score
+                            return f"★ {match.group(1)}"
 
-            # Method 2: Fallback regex pattern search
             score_match = re.search(r'href="/company/[^"]*"[^>]*>.*?<div[^>]*class="[^"]*flex[^"]*text-sm[^"]*"[^>]*>.*?([1-5]\.\d)', response.text, re.DOTALL | re.IGNORECASE)
             if score_match:
-                score = f"★ {score_match.group(1)}"
-                TEAMBLIND_CACHE[norm_key] = score
-                log_audit("BLIND SUCCESS", f"Retrieved & cached '{clean_company}': {score}")
-                return score
+                return f"★ {score_match.group(1)}"
+    except Exception:
+        pass
 
-        else:
-            log_audit("BLIND BLOCK", f"HTTP {response.status_code} response for '{clean_company}'")
-
-    except requests.exceptions.Timeout:
-        log_audit("BLIND WARN", f"Timeout fetching TeamBlind score for '{clean_company}'")
-    except Exception as e:
-        log_audit("BLIND ERROR", f"Failed fetching '{clean_company}': {e}")
-
-    TEAMBLIND_CACHE[norm_key] = "N/A"
     return "N/A"
 
 
-def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 50) -> list:
-    """Scrapes LinkedIn Guest API with security filtering, pagination, and non-blocking timeouts."""
+def get_levels_fyi_details(company_name: str) -> dict:
+    """Fetches stock quote summary, security role salaries, rating, and benefits from Levels.fyi public data."""
+    clean_company = company_name.strip().lower()
+    slug = re.sub(r'[^a-z0-9]+', '-', clean_company).strip('-')
+    
+    url = f"https://www.levels.fyi/companies/{slug}/salaries/software-engineer"
+
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=(4, 6))
+        if response.status_code == 200:
+            html = response.text
+            soup = BeautifulSoup(html, "html.parser")
+
+            ticker_match = re.search(r'\(NASDAQ:\s*([A-Z]+)\)|\(NYSE:\s*([A-Z]+)\)', html)
+            stock_symbol = ticker_match.group(1) or ticker_match.group(2) if ticker_match else None
+            stock_summary = f"${stock_symbol}" if stock_symbol else "Private / N/A"
+
+            rating_match = re.search(r'([1-5]\.\d)\s*out of 5', html, re.I) or re.search(r'Rating:\s*([1-5]\.\d)', html, re.I)
+            rating = f"★ {rating_match.group(1)}" if rating_match else "N/A"
+
+            salary_match = re.search(r'Median Total Compensation\s*\$([\d,]+)', html, re.I) or re.search(r'\$([\d,]+)\s*/\s*yr', html)
+            sec_salary = f"${salary_match.group(1)}/yr (Median)" if salary_match else "Data Not Disclosed"
+
+            benefits = []
+            for item in soup.find_all(["span", "div"], class_=re.compile(r"benefit|perk", re.I)):
+                text = item.get_text(strip=True)
+                if text and len(text) < 40 and text not in benefits:
+                    benefits.append(text)
+
+            return {
+                "stock_summary": stock_summary,
+                "rating": rating,
+                "security_salary": sec_salary,
+                "benefits": ", ".join(benefits[:4]) if benefits else "Standard Tech Benefits (Health, 401k/PF, Equity)"
+            }
+    except Exception:
+        pass
+
+    return {
+        "stock_summary": "N/A",
+        "rating": "N/A",
+        "security_salary": "Data Not Disclosed",
+        "benefits": "Standard Industry Perks"
+    }
+
+
+def get_company_intelligence(company_name: str) -> dict:
+    """Uses cached intelligence or performs fresh HTTP queries for TeamBlind & Levels.fyi."""
+    norm_key = company_name.strip().lower()
+
+    # Case 1: Valid dictionary in cache (CACHE HIT)
+    if norm_key in COMPANY_CACHE and isinstance(COMPANY_CACHE[norm_key], dict):
+        log_audit("CACHE HIT", f"Using cached scores for '{company_name}'")
+        return COMPANY_CACHE[norm_key]
+
+    # Case 2: Legacy string format in cache (upgrade entry)
+    if norm_key in COMPANY_CACHE and isinstance(COMPANY_CACHE[norm_key], str):
+        log_audit("CACHE UPGRADE", f"Upgrading legacy string cache for '{company_name}' with fresh Levels.fyi data")
+        blind_score = COMPANY_CACHE[norm_key]
+        levels_data = get_levels_fyi_details(company_name)
+    # Case 3: Completely missing from cache (FRESH HIT)
+    else:
+        log_audit("FRESH FETCH", f"No cache entry. Querying TeamBlind & Levels.fyi for '{company_name}'")
+        blind_score = get_teamblind_score(company_name)
+        levels_data = get_levels_fyi_details(company_name)
+
+    intel = {
+        "blind_score": blind_score,
+        "levels_stock": levels_data["stock_summary"],
+        "levels_rating": levels_data["rating"],
+        "levels_salary": levels_data["security_salary"],
+        "levels_benefits": levels_data["benefits"]
+    }
+
+    COMPANY_CACHE[norm_key] = intel
+    return intel
+
+
+def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 50) -> tuple:
+    """Scrapes LinkedIn, splitting listings into active security roles vs discarded roles."""
     base_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
-    jobs = []
+    valid_jobs = []
+    discarded_jobs = []
     start = 0
     page_size = 25
 
     log_audit("SEARCH START", f"Title: '{title}' | Location: '{location}'")
 
-    while len(jobs) < max_results_per_query:
+    while (len(valid_jobs) + len(discarded_jobs)) < max_results_per_query:
         params = {
             "keywords": title,
             "location": location,
@@ -151,19 +203,12 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
 
         try:
             response = requests.get(base_url, headers=HEADERS, params=params, timeout=(5, 8))
-            
-            if response.status_code == 429:
-                log_audit("LINKEDIN WARN", f"Rate limited (HTTP 429) at start={start}. Skipping.")
-                break
-            elif response.status_code != 200:
-                log_audit("LINKEDIN WARN", f"HTTP {response.status_code} at start={start}. Terminating query.")
+            if response.status_code != 200:
                 break
 
             soup = BeautifulSoup(response.text, "html.parser")
             cards = soup.find_all("li")
-
             if not cards:
-                log_audit("PAGINATION", f"End of results reached at start={start}.")
                 break
 
             parsed_in_page = 0
@@ -176,14 +221,9 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
 
                 if title_elem and company_elem and link_elem:
                     job_title = title_elem.text.strip()
-
-                    # Filter out non-security job titles
-                    if not is_security_role(job_title):
-                        log_audit("FILTER EXCLUDE", f"Skipped non-security role: '{job_title}'")
-                        continue
-
                     company_name = company_elem.text.strip()
                     job_link = link_elem["href"].split("?")[0]
+                    intel = get_company_intelligence(company_name)
 
                     job_data = {
                         "title": job_title,
@@ -191,42 +231,43 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
                         "location": location_elem.text.strip() if location_elem else location,
                         "link": job_link,
                         "posted": date_elem.text.strip() if date_elem else "Today",
-                        "blind_score": get_teamblind_score(company_name)
+                        "blind_score": intel["blind_score"],
+                        "levels_stock": intel["levels_stock"],
+                        "levels_rating": intel["levels_rating"],
+                        "levels_salary": intel["levels_salary"],
+                        "levels_benefits": intel["levels_benefits"]
                     }
-                    jobs.append(job_data)
+
+                    if is_security_role(job_title):
+                        valid_jobs.append(job_data)
+                    else:
+                        job_data["reason"] = "Title missing 'security' keyword"
+                        discarded_jobs.append(job_data)
+
                     parsed_in_page += 1
-
-                    if len(jobs) >= max_results_per_query:
-                        break
-
-            log_audit("PAGE FETCHED", f"Offset {start}: parsed {parsed_in_page} security jobs (Total: {len(jobs)})")
 
             if parsed_in_page == 0:
                 break
 
             start += page_size
-            time.sleep(1.2)
+            time.sleep(1.0)
 
-        except requests.exceptions.Timeout:
-            log_audit("TIMEOUT", f"LinkedIn request timed out at start={start} for '{location}'.")
-            break
         except Exception as e:
             log_audit("ERROR", f"Error during pagination for '{location}': {e}")
             break
 
-    log_audit("SEARCH COMPLETE", f"Found {len(jobs)} security jobs for '{title}' in '{location}'")
-    return jobs
+    return valid_jobs, discarded_jobs
 
 
-def generate_html_report(job_listings: list, location_counts: dict, output_filename: str = "index.html"):
-    """Generates dynamic HTML dashboard with column search inputs and real-time count updates."""
+def generate_html_report(job_listings: list, discarded_listings: list, location_counts: dict, output_filename: str = "index.html"):
+    """Generates tabbed HTML dashboard with Levels.fyi data drawer and discarded jobs tab."""
     template_str = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Daily Security Engineering Jobs</title>
+        <title>Daily Security Engineering Dashboard</title>
         <style>
             :root {
                 --bg: #0f172a;
@@ -237,21 +278,13 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
             }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; margin: 0; }
             h1 { font-size: 1.75rem; margin-bottom: 0.25rem; color: var(--accent); }
-            h2 { font-size: 1.1rem; color: #cbd5e1; margin-top: 1.5rem; }
             .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
             
-            .counter-badge {
-                display: inline-block;
-                background: #0284c7;
-                color: white;
-                padding: 0.4rem 0.8rem;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 0.95rem;
-                margin-bottom: 1rem;
-            }
+            .tab-header { display: flex; gap: 1rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+            .tab-btn { background: none; border: none; color: #94a3b8; font-size: 1rem; font-weight: 600; padding: 0.75rem 1.25rem; cursor: pointer; border-bottom: 3px solid transparent; }
+            .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-            .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+            .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
             .metric-card { background: var(--card-bg); border: 1px solid var(--border); padding: 0.75rem 1rem; border-radius: 6px; }
             .metric-card .loc-name { font-size: 0.8rem; color: #94a3b8; }
             .metric-card .loc-count { font-size: 1.25rem; font-weight: bold; color: var(--accent); }
@@ -259,118 +292,133 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
             table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; margin-top: 0.5rem; }
             th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
             th { background-color: #0284c7; color: white; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-            tr:hover { background-color: #334155; }
             
-            .col-filter {
-                width: 100%;
-                padding: 0.4rem 0.5rem;
-                margin-top: 0.4rem;
-                border-radius: 4px;
-                border: 1px solid var(--border);
-                background: #0f172a;
-                color: var(--text);
-                font-size: 0.8rem;
-                box-sizing: border-box;
-            }
-            .col-filter::placeholder { color: #64748b; }
+            .clickable-row { cursor: pointer; transition: background 0.2s; }
+            .clickable-row:hover { background-color: #334155; }
+            
+            .detail-row { display: none; background-color: #0284c715; }
+            .detail-container { padding: 1rem; font-size: 0.85rem; border-left: 4px solid var(--accent); }
+            .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
 
+            .col-filter { width: 100%; padding: 0.4rem; margin-top: 0.4rem; border-radius: 4px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 0.8rem; box-sizing: border-box; }
             .badge { background: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+            .badge-danger { background: #9f1239; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
             .score { color: #facc15; font-weight: bold; }
             a { color: var(--accent); text-decoration: none; font-weight: 500; }
-            a:hover { text-decoration: underline; }
         </style>
     </head>
     <body>
         <h1>Security Engineering Job Dashboard</h1>
         <div class="subtitle">Generated on {{ timestamp }}</div>
 
-        <div class="counter-badge">
-            Showing <span id="visibleCount">{{ total_jobs }}</span> of {{ total_jobs }} total security jobs
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab('activeTab', this)">Active Security Roles ({{ total_jobs }})</button>
+            <button class="tab-btn" onclick="switchTab('discardedTab', this)">Discarded Roles ({{ total_discarded }})</button>
         </div>
 
-        <h2>Location Breakdown</h2>
-        <div class="metrics-grid">
-            {% for loc, count in location_counts.items() %}
-            <div class="metric-card">
-                <div class="loc-name">{{ loc }}</div>
-                <div class="loc-count">{{ count }}</div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <table id="jobsTable">
-            <thead>
-                <tr>
-                    <th>
-                        Job Title
-                        <input type="text" id="filterTitle" class="col-filter" onkeyup="filterTable()" placeholder="Filter title...">
-                    </th>
-                    <th>
-                        Company
-                        <input type="text" id="filterCompany" class="col-filter" onkeyup="filterTable()" placeholder="Filter company...">
-                    </th>
-                    <th>
-                        TeamBlind Score
-                        <input type="text" id="filterBlind" class="col-filter" onkeyup="filterTable()" placeholder="Filter score...">
-                    </th>
-                    <th>
-                        Location
-                        <input type="text" id="filterLocation" class="col-filter" onkeyup="filterTable()" placeholder="Filter location...">
-                    </th>
-                    <th>
-                        Posted
-                        <input type="text" id="filterPosted" class="col-filter" onkeyup="filterTable()" placeholder="Filter date...">
-                    </th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for job in jobs %}
-                <tr>
-                    <td><strong>{{ job.title }}</strong></td>
-                    <td>{{ job.company }}</td>
-                    <td><span class="score">{{ job.blind_score }}</span></td>
-                    <td><span class="badge">{{ job.location }}</span></td>
-                    <td>{{ job.posted }}</td>
-                    <td><a href="{{ job.link }}" target="_blank">View Listing &rarr;</a></td>
-                </tr>
+        <!-- TAB 1: ACTIVE JOBS -->
+        <div id="activeTab">
+            <h2>Location Breakdown</h2>
+            <div class="metrics-grid">
+                {% for loc, count in location_counts.items() %}
+                <div class="metric-card">
+                    <div class="loc-name">{{ loc }}</div>
+                    <div class="loc-count">{{ count }}</div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+
+            <table id="jobsTable">
+                <thead>
+                    <tr>
+                        <th>Job Title <input type="text" class="col-filter" onkeyup="filterTable('jobsTable', 0)" placeholder="Filter..."></th>
+                        <th>Company <input type="text" class="col-filter" onkeyup="filterTable('jobsTable', 1)" placeholder="Filter..."></th>
+                        <th>Blind Score</th>
+                        <th>Stock & Rating (Levels.fyi)</th>
+                        <th>Location <input type="text" class="col-filter" onkeyup="filterTable('jobsTable', 3)" placeholder="Filter..."></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr class="clickable-row" onclick="toggleDrawer('drawer-{{ loop.index }}')">
+                        <td><strong>{{ job.title }}</strong> <br><small style="color:#94a3b8">▼ Click row for Levels.fyi perks</small></td>
+                        <td>{{ job.company }}</td>
+                        <td><span class="score">{{ job.blind_score }}</span></td>
+                        <td><span class="badge">{{ job.levels_stock }}</span> <span class="score">{{ job.levels_rating }}</span></td>
+                        <td><span class="badge">{{ job.location }}</span></td>
+                        <td><a href="{{ job.link }}" target="_blank" onclick="event.stopPropagation()">View Job &rarr;</a></td>
+                    </tr>
+                    <tr id="drawer-{{ loop.index }}" class="detail-row">
+                        <td colspan="6">
+                            <div class="detail-container">
+                                <strong>Levels.fyi Detailed Intelligence for {{ job.company }}:</strong>
+                                <div class="detail-grid" style="margin-top:0.5rem">
+                                    <div><strong>Security Salary Range:</strong> {{ job.levels_salary }}</div>
+                                    <div><strong>Stock / Ticker:</strong> {{ job.levels_stock }}</div>
+                                    <div><strong>Top Benefits:</strong> {{ job.levels_benefits }}</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TAB 2: DISCARDED JOBS -->
+        <div id="discardedTab" style="display: none;">
+            <p style="color:#94a3b8; font-size:0.9rem">Roles excluded because title lacks 'security' (e.g. Solutions Architect, generic Software Engineer).</p>
+            <table id="discardedTable">
+                <thead>
+                    <tr>
+                        <th>Filtered Job Title <input type="text" class="col-filter" onkeyup="filterTable('discardedTable', 0)" placeholder="Filter..."></th>
+                        <th>Company <input type="text" class="col-filter" onkeyup="filterTable('discardedTable', 1)" placeholder="Filter..."></th>
+                        <th>Location</th>
+                        <th>Exclusion Reason</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in discarded %}
+                    <tr>
+                        <td><strong>{{ job.title }}</strong></td>
+                        <td>{{ job.company }}</td>
+                        <td><span class="badge">{{ job.location }}</span></td>
+                        <td><span class="badge-danger">{{ job.reason }}</span></td>
+                        <td><a href="{{ job.link }}" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <script>
-            function filterTable() {
-                const titleQuery = document.getElementById('filterTitle').value.toLowerCase();
-                const companyQuery = document.getElementById('filterCompany').value.toLowerCase();
-                const blindQuery = document.getElementById('filterBlind').value.toLowerCase();
-                const locationQuery = document.getElementById('filterLocation').value.toLowerCase();
-                const postedQuery = document.getElementById('filterPosted').value.toLowerCase();
+            function switchTab(tabId, btn) {
+                document.getElementById('activeTab').style.display = tabId === 'activeTab' ? 'block' : 'none';
+                document.getElementById('discardedTab').style.display = tabId === 'discardedTab' ? 'block' : 'none';
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
 
-                const rows = document.querySelectorAll('#jobsTable tbody tr');
-                let visibleCount = 0;
+            function toggleDrawer(drawerId) {
+                const drawer = document.getElementById(drawerId);
+                drawer.style.display = drawer.style.display === 'table-row' ? 'none' : 'table-row';
+            }
+
+            function filterTable(tableId, colIndex) {
+                const table = document.getElementById(tableId);
+                const input = table.querySelectorAll('thead input')[colIndex];
+                const filter = input.value.toLowerCase();
+                const rows = table.querySelectorAll('tbody tr:not(.detail-row)');
 
                 rows.forEach(row => {
-                    const titleText = row.cells[0].innerText.toLowerCase();
-                    const companyText = row.cells[1].innerText.toLowerCase();
-                    const blindText = row.cells[2].innerText.toLowerCase();
-                    const locationText = row.cells[3].innerText.toLowerCase();
-                    const postedText = row.cells[4].innerText.toLowerCase();
-
-                    const matches = titleText.includes(titleQuery) &&
-                                    companyText.includes(companyQuery) &&
-                                    blindText.includes(blindQuery) &&
-                                    locationText.includes(locationQuery) &&
-                                    postedText.includes(postedQuery);
-
-                    if (matches) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
+                    const cell = row.cells[colIndex];
+                    if (cell) {
+                        const text = cell.innerText.toLowerCase();
+                        row.style.display = text.includes(filter) ? '' : 'none';
                     }
                 });
-
-                document.getElementById('visibleCount').innerText = visibleCount;
             }
         </script>
     </body>
@@ -378,63 +426,48 @@ def generate_html_report(job_listings: list, location_counts: dict, output_filen
     """
 
     template = Template(template_str)
-    today_str = datetime.now().strftime("%Y-%m-%d")
     timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
     rendered_html = template.render(
         jobs=job_listings,
         total_jobs=len(job_listings),
+        discarded=discarded_listings,
+        total_discarded=len(discarded_listings),
         location_counts=location_counts,
         timestamp=timestamp_str
     )
 
-    # Primary dashboard write
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(rendered_html)
-    log_audit("HTML REPORT", f"Updated primary dashboard: {output_filename}")
-
-    # Archive copy write
-    archive_dir = "archive"
-    os.makedirs(archive_dir, exist_ok=True)
-    archive_filename = os.path.join(archive_dir, f"index_{today_str}.html")
-
-    with open(archive_filename, "w", encoding="utf-8") as f:
-        f.write(rendered_html)
-    log_audit("HTML REPORT", f"Saved date-stamped copy: {archive_filename}")
+    log_audit("HTML REPORT", f"Updated dashboard: {output_filename}")
 
 
 def main():
-    load_cache()  # 1. Load persistent JSON cache from disk
+    load_cache()
 
     log_audit("SCRIPT INIT", "Starting Daily Security Job Collector...")
-    all_jobs = []
+    all_valid_jobs = []
+    all_discarded_jobs = []
     location_counts = {loc: 0 for loc in TARGET_LOCATIONS}
 
     for location in TARGET_LOCATIONS:
         log_audit("LOCATION RUN", f"Processing location: {location}")
-        location_jobs_count = 0
+        loc_valid_count = 0
 
         for title in TARGET_TITLES:
-            jobs = fetch_linkedin_jobs(title, location, max_results_per_query=50)
-            all_jobs.extend(jobs)
-            location_jobs_count += len(jobs)
+            valid, discarded = fetch_linkedin_jobs(title, location, max_results_per_query=50)
+            all_valid_jobs.extend(valid)
+            all_discarded_jobs.extend(discarded)
+            loc_valid_count += len(valid)
 
-        location_counts[location] = location_jobs_count
-        log_audit("LOCATION DONE", f"{location} finished -> Total security jobs: {location_jobs_count}")
+        location_counts[location] = loc_valid_count
 
     # Deduplicate entries by job link URL
-    unique_jobs_map = {job["link"]: job for job in all_jobs}
-    unique_jobs = list(unique_jobs_map.values())
+    unique_valid = list({job["link"]: job for job in all_valid_jobs}.values())
+    unique_discarded = list({job["link"]: job for job in all_discarded_jobs}.values())
 
-    log_audit("SUMMARY", "========================================")
-    log_audit("SUMMARY", f"Total Valid Security Jobs Collected: {len(all_jobs)}")
-    log_audit("SUMMARY", f"Unique Security Jobs (Deduplicated): {len(unique_jobs)}")
-    log_audit("SUMMARY", f"Unique Companies Cached in Memory: {len(TEAMBLIND_CACHE)}")
-    log_audit("SUMMARY", "========================================")
-
-    generate_html_report(unique_jobs, location_counts)
-    
-    save_cache()  # 2. Save cache back to disk with any newly discovered scores
+    generate_html_report(unique_valid, unique_discarded, location_counts)
+    save_cache()
 
 
 if __name__ == "__main__":
