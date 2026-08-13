@@ -1,18 +1,20 @@
-name: Daily Job Fetcher
+name: Daily Security Job Scraper
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # Runs daily at 8:00 AM UTC
-  workflow_dispatch:
-
-permissions:
-  contents: write  # Grants permission to commit changes back to the repository
+    # Runs daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
-  build-and-run:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write # Needed to commit teamblind_cache.json and index.html back to repo
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -20,16 +22,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
-        run: pip install requests beautifulsoup4 jinja2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 jinja2
 
-      - name: Run Job Fetcher
+      - name: Run Job Scraper Script
         run: python job_fetcher.py
 
-      - name: Commit HTML and Cache Updates
+      - name: Commit and Push Cache & Report
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add index.html archive/ teamblind_cache.json
-          git commit -m "Auto-update job dashboard and TeamBlind cache" || echo "No changes to commit"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Stage updated cache and generated dashboard
+          git add teamblind_cache.json index.html
+          
+          # Commit only if there are changes
+          git diff --staged --quiet || git commit -m "chore: update job dashboard and teamblind cache [skip ci]"
           git push
