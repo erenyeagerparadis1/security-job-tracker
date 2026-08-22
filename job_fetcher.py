@@ -43,6 +43,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "teamblind_cache.json")
 FAILED_FILE = os.path.join(BASE_DIR, "teamblind_failed.json")
 OUTPUT_FILE = os.path.join(BASE_DIR, "index.html")
+ARCHIVE_DIR = os.path.join(BASE_DIR, "archive")
 COMPANY_CACHE = {}
 FAILED_ORGS = {}
 
@@ -368,12 +369,29 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
     return valid_jobs, discarded_jobs
 
 
+def _list_archive_dates():
+    """Returns dated archive snapshots as YYYY-MM-DD, newest first."""
+    if not os.path.isdir(ARCHIVE_DIR):
+        return []
+    dates = []
+    for name in os.listdir(ARCHIVE_DIR):
+        match = re.fullmatch(r"index_(\d{4}-\d{2}-\d{2})\.html", name)
+        if match:
+            dates.append(match.group(1))
+    return sorted(dates, reverse=True)
+
+
 def generate_html_report(job_listings: list, discarded_listings: list, location_counts: dict, output_filename: str = None):
     """Generates tabbed HTML dashboard with TeamBlind scores and discarded jobs."""
     if not output_filename:
         output_filename = OUTPUT_FILE
     elif not os.path.isabs(output_filename):
         output_filename = os.path.join(BASE_DIR, output_filename)
+
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    archive_dates = _list_archive_dates()
+    if today_str not in archive_dates:
+        archive_dates = [today_str] + archive_dates
 
     template_str = """
     <!DOCTYPE html>
@@ -392,8 +410,11 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
             }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; margin: 0; }
             h1 { font-size: 1.75rem; margin-bottom: 0.25rem; color: var(--accent); }
-            .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
+            .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem; }
             
+            .archive-row { color: #94a3b8; font-size: 0.8rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.45rem 0.75rem; align-items: center; }
+            .archive-row a { color: var(--accent); }
+
             .tab-header { display: flex; gap: 1rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
             .tab-btn { background: none; border: none; color: #94a3b8; font-size: 1rem; font-weight: 600; padding: 0.75rem 1.25rem; cursor: pointer; border-bottom: 3px solid transparent; }
             .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -424,6 +445,12 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
     <body>
         <h1>Security Engineering Job Dashboard</h1>
         <div class="subtitle">Generated on {{ timestamp }}</div>
+        <div class="archive-row">
+            <a href="{{ home_href }}">Latest</a>
+            {% for day in archive_dates %}
+            <a href="{{ archive_prefix }}index_{{ day }}.html">{{ day }}</a>
+            {% endfor %}
+        </div>
 
         <div class="tab-header">
             <button class="tab-btn active" onclick="switchTab('activeTab', this)">Active Security Roles ({{ total_jobs }})</button>
@@ -643,19 +670,35 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
 
     template = Template(template_str)
     timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+    render_kwargs = {
+        "jobs": job_listings,
+        "total_jobs": len(job_listings),
+        "discarded": discarded_listings,
+        "total_discarded": len(discarded_listings),
+        "location_counts": location_counts,
+        "timestamp": timestamp_str,
+        "archive_dates": archive_dates,
+    }
 
     rendered_html = template.render(
-        jobs=job_listings,
-        total_jobs=len(job_listings),
-        discarded=discarded_listings,
-        total_discarded=len(discarded_listings),
-        location_counts=location_counts,
-        timestamp=timestamp_str
+        home_href="index.html",
+        archive_prefix="archive/",
+        **render_kwargs
     )
-
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(rendered_html)
     log_audit("HTML REPORT", f"Updated dashboard: {output_filename}")
+
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
+    archive_filename = os.path.join(ARCHIVE_DIR, f"index_{today_str}.html")
+    archive_html = template.render(
+        home_href="../index.html",
+        archive_prefix="",
+        **render_kwargs
+    )
+    with open(archive_filename, "w", encoding="utf-8") as f:
+        f.write(archive_html)
+    log_audit("HTML REPORT", f"Saved archive copy: {archive_filename}")
 
 
 def main():
