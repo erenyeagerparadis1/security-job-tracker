@@ -16,7 +16,6 @@ TARGET_TITLES = [
 
 # Configured Locations (US excluded)
 TARGET_LOCATIONS = [
-    "Chennai, India",
     "Coimbatore, India"
 ]
 
