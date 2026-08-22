@@ -11,11 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: write # Needed to commit teamblind_cache.json and index.html back to repo
+      contents: write # Needed to commit cache to main and publish to gh-pages
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Restore existing Pages archive
+        run: |
+          mkdir -p archive
+          git fetch origin gh-pages --depth=1
+          if git cat-file -e origin/gh-pages:archive 2>/dev/null; then
+            git checkout origin/gh-pages -- archive
+            git restore --staged archive || git reset HEAD -- archive
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,14 +39,29 @@ jobs:
       - name: Run Job Scraper Script
         run: python job_fetcher.py
 
-      - name: Commit and Push Cache & Report
+      - name: Commit cache to main
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Stage updated cache, failed-org list, and generated dashboard
-          git add teamblind_cache.json teamblind_failed.json index.html
-          
-          # Commit only if there are changes
-          git diff --staged --quiet || git commit -m "chore: update job dashboard and teamblind cache [skip ci]"
+          git add teamblind_cache.json teamblind_failed.json
+          git diff --staged --quiet || git commit -m "chore: update teamblind cache [skip ci]"
           git push
+
+      - name: Prepare GitHub Pages payload
+        run: |
+          mkdir -p pages_publish/archive
+          cp index.html pages_publish/index.html
+          if [ -d archive ]; then
+            cp -R archive/. pages_publish/archive/
+          fi
+          touch pages_publish/.nojekyll
+
+      - name: Deploy dashboard to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./pages_publish
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: 'deploy: update job dashboard'
