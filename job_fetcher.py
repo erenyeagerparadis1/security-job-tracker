@@ -16,21 +16,8 @@ TARGET_TITLES = [
 
 # Configured Locations (US excluded)
 TARGET_LOCATIONS = [
-    "Bengaluru, India",
-    "Hyderabad, India",
     "Chennai, India",
-    "Coimbatore, India",
-    "Singapore",
-    "Malaysia",
-    "Canada",
-    "United Kingdom",
-    "Australia",
-    "Netherlands",
-    "Ireland",
-    "Japan",
-    "Germany",
-    "United Arab Emirates",
-    "New Zealand"
+    "Coimbatore, India"
 ]
 
 HEADERS = {
