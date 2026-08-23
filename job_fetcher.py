@@ -653,6 +653,17 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
             .badge-danger { background: #9f1239; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
             .score { color: #facc15; font-weight: bold; }
             a { color: var(--accent); text-decoration: none; font-weight: 500; }
+            .completed-filter { display: flex; flex-wrap: wrap; gap: 0.45rem 0.75rem; align-items: center; margin: 0 0 0.75rem; }
+            .completed-filter-label { color: #94a3b8; font-size: 0.8rem; }
+            .completed-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+            .completed-chip { min-height: 36px; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: #0f172a; color: #e2e8f0; font-size: 0.85rem; cursor: pointer; touch-action: manipulation; }
+            .completed-chip[aria-pressed="true"] { background: #0369a1; border-color: var(--accent); color: #fff; }
+            .completed-hint { color: #64748b; font-size: 0.75rem; }
+            #jobsTable tbody tr { cursor: pointer; }
+            #jobsTable tbody tr:hover { background: #334155; }
+            #jobsTable tbody tr.completed { opacity: 0.55; }
+            #jobsTable tbody tr.completed strong { text-decoration: line-through; }
+            .done-badge { display: inline-block; margin-left: 0.4rem; background: #166534; color: #bbf7d0; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: 600; }
 
             @media (max-width: 640px) {
                 body { padding: 1rem; }
@@ -711,6 +722,16 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 {% endfor %}
             </div>
 
+            <div class="completed-filter" id="completedFilter">
+                <div class="completed-filter-label">Show</div>
+                <div class="completed-chips">
+                    <button type="button" class="completed-chip" data-mode="incomplete" aria-pressed="true">Incomplete</button>
+                    <button type="button" class="completed-chip" data-mode="completed" aria-pressed="false">Completed</button>
+                    <button type="button" class="completed-chip" data-mode="both" aria-pressed="false">Both</button>
+                </div>
+                <div class="completed-hint">Double-click a row to mark it complete</div>
+            </div>
+
             <div class="table-scroll">
             <table id="jobsTable">
                 <thead>
@@ -756,7 +777,7 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 </thead>
                 <tbody>
                     {% for job in jobs %}
-                    <tr>
+                    <tr data-job-key="{{ job.link }}" title="Double-click to mark complete">
                         <td><strong>{{ job.title }}</strong></td>
                         <td>{{ job.company }}</td>
                         <td><span class="score">{{ job.blind_score }}</span></td>
@@ -836,6 +857,106 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 if (!el) return null;
                 try { return JSON.parse(el.textContent || '{}'); } catch (e) { return {}; }
             })();
+
+            const COMPLETED_KEY = 'sjt-completed';
+            const COMPLETED_FILTER_KEY = 'sjt-completed-filter';
+
+            function loadCompleted() {
+                try {
+                    const raw = localStorage.getItem(COMPLETED_KEY);
+                    if (!raw) return {};
+                    const data = JSON.parse(raw);
+                    return (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            function saveCompleted(map) {
+                try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(map)); } catch (e) {}
+            }
+
+            function loadCompletedFilter() {
+                try {
+                    const mode = localStorage.getItem(COMPLETED_FILTER_KEY);
+                    return (mode === 'completed' || mode === 'both' || mode === 'incomplete') ? mode : 'incomplete';
+                } catch (e) {
+                    return 'incomplete';
+                }
+            }
+
+            function persistCompletedFilter(mode) {
+                try { localStorage.setItem(COMPLETED_FILTER_KEY, mode); } catch (e) {}
+            }
+
+            function currentCompletedFilter() {
+                const pressed = document.querySelector('#completedFilter [aria-pressed="true"]');
+                const mode = pressed && pressed.getAttribute('data-mode');
+                return (mode === 'completed' || mode === 'both' || mode === 'incomplete') ? mode : 'incomplete';
+            }
+
+            function paintCompleted() {
+                const map = loadCompleted();
+                const table = document.getElementById('jobsTable');
+                if (!table) return;
+                tableRows(table).forEach(row => {
+                    const key = row.getAttribute('data-job-key') || '';
+                    const done = !!(key && map[key]);
+                    row.classList.toggle('completed', done);
+                    row.title = done ? 'Double-click to mark incomplete' : 'Double-click to mark complete';
+                    let badge = row.querySelector('.done-badge');
+                    if (done && !badge) {
+                        const strong = row.querySelector('strong');
+                        if (strong) {
+                            badge = document.createElement('span');
+                            badge.className = 'done-badge';
+                            badge.textContent = 'Done';
+                            strong.insertAdjacentElement('afterend', badge);
+                        }
+                    } else if (!done && badge) {
+                        badge.remove();
+                    }
+                });
+            }
+
+            function setCompletedFilter(mode) {
+                const wrap = document.getElementById('completedFilter');
+                if (!wrap) return;
+                wrap.querySelectorAll('.completed-chip').forEach(btn => {
+                    btn.setAttribute('aria-pressed', btn.getAttribute('data-mode') === mode ? 'true' : 'false');
+                });
+                persistCompletedFilter(mode);
+                filterTable('jobsTable');
+            }
+
+            function initCompletedFilter() {
+                const wrap = document.getElementById('completedFilter');
+                if (!wrap) return;
+                const mode = loadCompletedFilter();
+                wrap.querySelectorAll('.completed-chip').forEach(btn => {
+                    btn.setAttribute('aria-pressed', btn.getAttribute('data-mode') === mode ? 'true' : 'false');
+                    btn.addEventListener('click', () => setCompletedFilter(btn.getAttribute('data-mode')));
+                });
+            }
+
+            function initCompletedToggle() {
+                const tbody = document.querySelector('#jobsTable tbody');
+                if (!tbody || tbody.dataset.completeBound) return;
+                tbody.dataset.completeBound = '1';
+                tbody.addEventListener('dblclick', event => {
+                    if (event.target.closest('a')) return;
+                    const row = event.target.closest('tr');
+                    if (!row) return;
+                    const key = row.getAttribute('data-job-key') || '';
+                    if (!key) return;
+                    const map = loadCompleted();
+                    if (map[key]) delete map[key];
+                    else map[key] = true;
+                    saveCompleted(map);
+                    paintCompleted();
+                    filterTable('jobsTable');
+                });
+            }
 
             function cellText(cell) {
                 if (!cell) return '';
@@ -940,8 +1061,9 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                     }
                     specs.push({ col, query, selected, mode });
                 });
+                const completedMode = tableId === 'jobsTable' ? currentCompletedFilter() : 'both';
                 tableRows(table).forEach(row => {
-                    const show = specs.every(spec => {
+                    let show = specs.every(spec => {
                         const text = cellText(row.cells[spec.col]);
                         if (spec.query && !text.toLowerCase().includes(spec.query)) return false;
                         if (spec.selected.length) {
@@ -950,6 +1072,11 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                         }
                         return true;
                     });
+                    if (completedMode !== 'both') {
+                        const isCompleted = row.classList.contains('completed');
+                        if (completedMode === 'incomplete' && isCompleted) show = false;
+                        if (completedMode === 'completed' && !isCompleted) show = false;
+                    }
                     row.style.display = show ? '' : 'none';
                 });
             }
@@ -1022,7 +1149,7 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                     return;
                 }
                 tbody.innerHTML = jobs.map(job => (
-                    '<tr><td><strong>' + escapeHtml(job.title) + '</strong>' + dateBadge(job) +
+                    '<tr data-job-key="' + escapeHtml(job.link) + '" title="Double-click to mark complete"><td><strong>' + escapeHtml(job.title) + '</strong>' + dateBadge(job) +
                     '</td><td>' + escapeHtml(job.company) +
                     '</td><td><span class="score">' + escapeHtml(job.blind_score) +
                     '</span></td><td><span class="badge">' + escapeHtml(job.location) +
@@ -1081,6 +1208,8 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 resetColFilters('discardedTable');
                 initFilters('jobsTable');
                 initFilters('discardedTable');
+                paintCompleted();
+                filterTable('jobsTable');
             }
 
             function initDateFilter() {
@@ -1116,11 +1245,15 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 }
             });
 
+            initCompletedFilter();
+            initCompletedToggle();
             if (jobHistory) {
                 initDateFilter();
             } else {
                 initFilters('jobsTable');
                 initFilters('discardedTable');
+                paintCompleted();
+                filterTable('jobsTable');
             }
         </script>
     </body>
