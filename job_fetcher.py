@@ -142,9 +142,19 @@ def _clear_blind_failure(norm_key: str):
 
 
 def is_security_role(title: str) -> bool:
-    """Strictly validates if job title contains security keywords."""
+    """True when the title contains a security, vulnerability, red team, or threat keyword."""
     clean_title = title.lower()
-    security_keywords = ["security", "secops", "cybersecurity", "infosec", "securityanalyst"]
+    security_keywords = [
+        "security",
+        "secops",
+        "cybersecurity",
+        "infosec",
+        "securityanalyst",
+        "vulnerability",
+        "red team",
+        "redteam",
+        "threat",
+    ]
     return any(kw in clean_title for kw in security_keywords)
 
 
@@ -352,7 +362,7 @@ def fetch_linkedin_jobs(title: str, location: str, max_results_per_query: int = 
                     if is_security_role(job_title):
                         valid_jobs.append(job_data)
                     else:
-                        job_data["reason"] = "Title missing 'security' keyword"
+                        job_data["reason"] = "Title missing security/vulnerability/red team/threat keyword"
                         discarded_jobs.append(job_data)
 
                     parsed_in_page += 1
@@ -754,7 +764,7 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
 
         <!-- TAB 2: DISCARDED JOBS -->
         <div id="discardedTab" style="display: none;">
-            <p style="color:#94a3b8; font-size:0.9rem">Roles excluded because title lacks 'security' (e.g. Solutions Architect, generic Software Engineer).</p>
+            <p style="color:#94a3b8; font-size:0.9rem">Roles excluded because title lacks security, vulnerability, red team, or threat (e.g. Solutions Architect, generic Software Engineer).</p>
             <div class="table-scroll">
             <table id="discardedTable">
                 <thead>
