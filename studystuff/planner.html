@@ -1,0 +1,170 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Engineering Study Planner</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <h1>Security Engineering Study Planner</h1>
+      <p class="topbar-sub">Weekly planning, progress tracking, notes, and spaced reviews for the interview study notes.</p>
+    </div>
+    <nav class="topbar-links" aria-label="Source notes">
+      <a href="interview-study-notes-for-security-engineering.md" class="nav-link">Study notes</a>
+      <a href="README.md" class="nav-link">README</a>
+    </nav>
+  </header>
+
+  <section class="stats-bar" aria-label="Progress summary">
+    <div class="stat-card">
+      <span class="stat-label">Global progress</span>
+      <strong class="stat-number" id="globalPercent">0%</strong>
+      <div class="progress-track"><div class="progress-fill" id="globalBar"></div></div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Completed</span>
+      <strong class="stat-number" id="completedCount">0/0</strong>
+      <div class="progress-track"><div class="progress-fill" id="weekBar"></div></div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Due reviews</span>
+      <strong class="stat-number" id="reviewCount">0</strong>
+      <p class="stat-hint" id="reviewHint">Nothing due.</p>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Planned today</span>
+      <strong class="stat-number" id="todayCount">0</strong>
+      <p class="stat-hint" id="todayHint">No topics assigned.</p>
+    </div>
+  </section>
+
+  <div class="layout">
+
+    <aside class="sidebar" aria-label="Week selector">
+      <div class="panel sidebar-panel">
+        <div class="panel-head"><h2>17-week path</h2></div>
+        <div class="week-list" id="weekList"></div>
+      </div>
+    </aside>
+
+    <section class="main-col">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="weekTitle">Week 1</h2>
+            <p class="week-desc" id="weekSummary"></p>
+          </div>
+          <span class="badge" id="weekMeta">0 topics</span>
+        </div>
+        <div class="panel-body">
+          <div class="filters">
+            <label class="filter-field">
+              <span>Search</span>
+              <input id="search" type="search" placeholder="DNS, XSS, RSA, Kerberos, YARA…">
+            </label>
+            <label class="filter-field">
+              <span>Status</span>
+              <select id="statusFilter">
+                <option value="all">All</option>
+                <option value="open">Open</option>
+                <option value="done">Done</option>
+                <option value="due">Due today</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Difficulty</span>
+              <select id="difficultyFilter">
+                <option value="all">All</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="very-high">Very high</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Day</span>
+              <select id="dayFilter">
+                <option value="all">All</option>
+                <option>Monday</option>
+                <option>Tuesday</option>
+                <option>Wednesday</option>
+                <option>Thursday</option>
+                <option>Friday</option>
+                <option>Saturday</option>
+                <option>Sunday</option>
+                <option>Unscheduled</option>
+              </select>
+            </label>
+          </div>
+          <div class="action-bar">
+            <div class="btn-row">
+              <button class="btn-primary" id="autoFill" type="button">Auto-fill week</button>
+              <button id="clearFilters" type="button">Clear filters</button>
+            </div>
+            <div class="btn-row">
+              <button id="resetWeek" type="button">Reset week</button>
+              <button class="btn-danger" id="resetAll" type="button">Reset all</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-scroll-area">
+        <div class="day-grid" id="grid" aria-label="Weekly planner grid"></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head">
+          <h2>Matching topics</h2>
+          <span class="badge" id="visibleCount">0 visible</span>
+        </div>
+        <div class="panel-body">
+          <div class="topic-list" id="topicList"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-col" aria-label="Topic details and review queue">
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Today</h2>
+          <span class="badge" id="todayDate"></span>
+        </div>
+        <div class="panel-body">
+          <ul class="review-queue" id="todayQueue"></ul>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Topic detail</h2></div>
+        <div class="panel-body" id="detail"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Backup</h2></div>
+        <div class="panel-body">
+          <div class="btn-row" style="margin-bottom:10px">
+            <button id="exportState" type="button">Export</button>
+            <button id="importState" type="button">Import</button>
+          </div>
+          <label class="sr-only" for="backupText">Backup JSON</label>
+          <textarea id="backupText" placeholder="Exported progress appears here. Paste backup JSON here before importing."></textarea>
+          <p class="hint" id="backupStatus">Progress is saved locally in this browser.</p>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
