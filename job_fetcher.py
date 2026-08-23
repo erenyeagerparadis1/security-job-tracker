@@ -642,6 +642,13 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
             .ms-wrap.open .ms-panel { display: block; }
             .ms-option { display: flex; gap: 0.4rem; align-items: flex-start; padding: 0.2rem 0; color: #e2e8f0; font-size: 0.75rem; cursor: pointer; }
             .ms-option input { margin-top: 0.15rem; }
+            .ms-mode { display: flex; margin-top: 0.3rem; }
+            .ms-mode-btn { flex: 1; min-height: 32px; padding: 0.25rem 0.4rem; border: 1px solid var(--border); background: #0f172a; color: #94a3b8; font-size: 0.7rem; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+            .ms-mode-btn:first-child { border-radius: 4px 0 0 4px; }
+            .ms-mode-btn:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
+            .ms-mode-btn.active[data-mode="include"] { background: #0369a1; color: #fff; border-color: var(--accent); }
+            .ms-mode-btn.active[data-mode="exclude"] { background: #9f1239; color: #fff; border-color: #fb7185; }
+            .ms-wrap.exclude .ms-toggle { border-color: #fb7185; color: #fda4af; }
             .badge { background: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
             .badge-danger { background: #9f1239; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
             .score { color: #facc15; font-weight: bold; }
@@ -856,6 +863,35 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 return Array.from(table.querySelectorAll('tbody tr')).filter(row => row.cells.length > 1);
             }
 
+            function currentFilterMode(box) {
+                return box.dataset.filterMode === 'exclude' ? 'exclude' : 'include';
+            }
+
+            function ensureFilterMode(box, tableId) {
+                if (box.querySelector('.ms-mode')) return;
+                const modeBar = document.createElement('div');
+                modeBar.className = 'ms-mode';
+                ['include', 'exclude'].forEach(name => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'ms-mode-btn' + (name === 'include' ? ' active' : '');
+                    btn.setAttribute('data-mode', name);
+                    btn.textContent = name === 'include' ? 'Include' : 'Exclude';
+                    btn.addEventListener('click', () => {
+                        box.dataset.filterMode = name;
+                        modeBar.querySelectorAll('.ms-mode-btn').forEach(b => {
+                            b.classList.toggle('active', b.getAttribute('data-mode') === name);
+                        });
+                        const wrap = box.querySelector('.ms-wrap');
+                        if (wrap) wrap.classList.toggle('exclude', name === 'exclude');
+                        filterTable(tableId);
+                    });
+                    modeBar.appendChild(btn);
+                });
+                const wrap = box.querySelector('.ms-wrap');
+                box.insertBefore(modeBar, wrap);
+            }
+
             function initFilters(tableId) {
                 const table = document.getElementById(tableId);
                 if (!table) return;
@@ -863,6 +899,7 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 table.querySelectorAll('thead th').forEach((th, col) => {
                     const box = th.querySelector('.col-filter-box');
                     if (!box) return;
+                    ensureFilterMode(box, tableId);
                     const panel = box.querySelector('.ms-panel');
                     panel.innerHTML = '';
                     const values = Array.from(new Set(rows.map(row => cellText(row.cells[col])).filter(Boolean)))
@@ -892,15 +929,25 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                     if (!box) return;
                     const query = (box.querySelector('.col-search').value || '').trim().toLowerCase();
                     const selected = Array.from(box.querySelectorAll('.ms-panel input:checked')).map(input => input.value);
+                    const mode = currentFilterMode(box);
                     const toggle = box.querySelector('.ms-toggle');
-                    toggle.textContent = selected.length ? selected.length + ' selected' : 'All values';
-                    specs.push({ col, query, selected });
+                    const wrap = box.querySelector('.ms-wrap');
+                    if (wrap) wrap.classList.toggle('exclude', mode === 'exclude');
+                    if (selected.length) {
+                        toggle.textContent = selected.length + (mode === 'exclude' ? ' excluded' : ' selected');
+                    } else {
+                        toggle.textContent = mode === 'exclude' ? 'Exclude none' : 'All values';
+                    }
+                    specs.push({ col, query, selected, mode });
                 });
                 tableRows(table).forEach(row => {
                     const show = specs.every(spec => {
                         const text = cellText(row.cells[spec.col]);
                         if (spec.query && !text.toLowerCase().includes(spec.query)) return false;
-                        if (spec.selected.length && !spec.selected.includes(text)) return false;
+                        if (spec.selected.length) {
+                            const hit = spec.selected.includes(text);
+                            if (spec.mode === 'exclude' ? hit : !hit) return false;
+                        }
                         return true;
                     });
                     row.style.display = show ? '' : 'none';
@@ -1005,6 +1052,11 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
                 table.querySelectorAll('.col-search').forEach(input => { input.value = ''; });
                 table.querySelectorAll('.ms-panel').forEach(panel => { panel.innerHTML = ''; });
                 table.querySelectorAll('.ms-toggle').forEach(btn => { btn.textContent = 'All values'; });
+                table.querySelectorAll('.ms-wrap').forEach(wrap => wrap.classList.remove('exclude'));
+                table.querySelectorAll('.col-filter-box').forEach(box => { box.dataset.filterMode = 'include'; });
+                table.querySelectorAll('.ms-mode-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-mode') === 'include');
+                });
             }
 
             function applyDateSelection() {
@@ -1059,7 +1111,7 @@ def generate_html_report(job_listings: list, discarded_listings: list, location_
             }
 
             document.addEventListener('click', event => {
-                if (!event.target.closest('.ms-wrap')) {
+                if (!event.target.closest('.col-filter-box')) {
                     document.querySelectorAll('.ms-wrap.open').forEach(wrap => wrap.classList.remove('open'));
                 }
             });
