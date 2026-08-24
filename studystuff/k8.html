@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kubernetes — Senior Security Engineer Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e1117;
+    --bg-raised: #161b22;
+    --bg-surface: #1c2129;
+    --bg-overlay: #21262d;
+    --border: #30363d;
+    --border-bright: #484f58;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --cyan: #58a6ff;
+    --cyan-dim: #1f6feb33;
+    --green: #3fb950;
+    --green-dim: #23863533;
+    --red: #f85149;
+    --red-dim: #f8514933;
+    --orange: #d29922;
+    --orange-dim: #d2992233;
+    --purple: #bc8cff;
+    --purple-dim: #bc8cff33;
+    --pink: #f778ba;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    padding: 60px 40px 50px;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .hero h1 span { color: var(--cyan); }
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    gap: 48px;
+  }
+
+  /* ── SIDEBAR / AGENDA ── */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+    padding: 32px 0;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  .sidebar-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    padding-left: 14px;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover {
+    color: var(--text);
+    border-left-color: var(--border-bright);
+  }
+  .sidebar a .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 18px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex: 1; min-width: 0; padding: 32px 0 100px; }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2 .sec-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--cyan);
+    font-weight: 500;
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+
+  p { margin-bottom: 14px; color: var(--text-muted); }
+  p strong { color: var(--text); font-weight: 500; }
+
+  /* ── DIAGRAM BOXES ── */
+  .diagram {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin: 20px 0 24px;
+    overflow-x: auto;
+  }
+  .diagram-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  /* Architecture boxes */
+  .arch-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  .arch-box.control { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+  .arch-box.worker { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .arch-box.danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .arch-box.warn { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+  .arch-box.neutral { background: var(--bg-surface); color: var(--text-muted); }
+  .arch-box.purple { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
+
+  .arch-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .arch-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 18px;
+    padding: 4px 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 14px 0 20px;
+    overflow-x: auto;
+  }
+  .code-header {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-header .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .code-header .dot.r { background: var(--red); }
+  .code-header .dot.y { background: var(--orange); }
+  .code-header .dot.g { background: var(--green); }
+  .code-block pre {
+    padding: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text);
+    overflow-x: auto;
+  }
+  .code-block .comment { color: var(--text-dim); }
+  .code-block .key { color: var(--cyan); }
+  .code-block .val { color: var(--green); }
+  .code-block .str { color: var(--orange); }
+  .code-block .danger-val { color: var(--red); }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin: 16px 0 20px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .callout.warn { background: var(--red-dim); border-left: 3px solid var(--red); }
+  .callout.tip { background: var(--green-dim); border-left: 3px solid var(--green); }
+  .callout.info { background: var(--cyan-dim); border-left: 3px solid var(--cyan); }
+  .callout .icon { font-size: 16px; flex-shrink: 0; padding-top: 1px; }
+  .callout .callout-text { color: var(--text-muted); }
+  .callout .callout-text strong { color: var(--text); }
+
+  /* ── TABLES ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--bg-surface);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  tr:last-child td { border-bottom: none; }
+  td code, p code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-overlay);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--cyan);
+  }
+
+  /* ── FLOW DIAGRAMS ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 16px 0;
+  }
+  .flow-step {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+    color: var(--text);
+  }
+  .flow-arrow {
+    color: var(--text-dim);
+    font-size: 16px;
+    padding: 0 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── GRID CARDS ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin: 16px 0 20px;
+  }
+  .card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .card-label.c { color: var(--cyan); }
+  .card-label.g { color: var(--green); }
+  .card-label.r { color: var(--red); }
+  .card-label.o { color: var(--orange); }
+  .card-label.p { color: var(--purple); }
+  .card p { font-size: 13px; margin: 0; color: var(--text-muted); }
+
+  /* ── ATTACK SURFACE ── */
+  .attack-layer {
+    display: flex;
+    align-items: stretch;
+    margin: 6px 0;
+    gap: 12px;
+  }
+  .attack-label {
+    width: 140px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .attack-bar {
+    flex: 1;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .attack-bar.high { background: var(--red-dim); }
+  .attack-bar.med { background: var(--orange-dim); }
+  .attack-bar.low { background: var(--green-dim); }
+  .attack-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; margin: 14px 0 20px; }
+  .checklist li {
+    padding: 8px 0 8px 28px;
+    position: relative;
+    color: var(--text-muted);
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    color: var(--cyan);
+    font-size: 15px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 800px) {
+    .container { flex-direction: column; padding: 0 20px; }
+    .sidebar { position: static; width: 100%; max-height: none; padding: 20px 0; border-bottom: 1px solid var(--border); }
+    .hero { padding: 40px 20px 30px; }
+    .hero h1 { font-size: 28px; }
+    .arch-row { flex-direction: column; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .attack-layer { flex-direction: column; gap: 4px; }
+    .attack-label { width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<div class="hero">
+  <div class="hero-eyebrow">Security Engineering Reference</div>
+  <h1>Kubernetes<br>from a <span>Security</span> Lens</h1>
+  <p class="hero-sub">Architecture, access control, network segmentation, secrets, supply chain, runtime defense, and hardening — everything expected at a senior security engineering level.</p>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-title">Agenda</div>
+  <a href="#s1"><span class="num">01</span> What K8s Actually Is</a>
+  <a href="#s2"><span class="num">02</span> Architecture Deep-Dive</a>
+  <a href="#s3"><span class="num">03</span> Core Objects</a>
+  <a href="#s4"><span class="num">04</span> Networking Model</a>
+  <a href="#s5"><span class="num">05</span> Authentication</a>
+  <a href="#s6"><span class="num">06</span> RBAC</a>
+  <a href="#s7"><span class="num">07</span> Pod Security</a>
+  <a href="#s8"><span class="num">08</span> Network Policies</a>
+  <a href="#s9"><span class="num">09</span> Secrets Management</a>
+  <a href="#s10"><span class="num">10</span> Image &amp; Supply Chain</a>
+  <a href="#s11"><span class="num">11</span> Audit Logging</a>
+  <a href="#s12"><span class="num">12</span> Service Mesh &amp; mTLS</a>
+  <a href="#s13"><span class="num">13</span> Attack Surface Map</a>
+  <a href="#s14"><span class="num">14</span> Hardening Checklist</a>
+  <a href="#s15"><span class="num">15</span> Hands-On: Deploy a Tomcat App</a>
+  <a href="#s16"><span class="num">16</span> Hands-On: Secure the Deployment</a>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="main">
+
+<!-- ────────────────── 01 ────────────────── -->
+<section id="s1">
+<h2><span class="sec-num">01</span> What Kubernetes Actually Is</h2>
+<p>Kubernetes (K8s) is a <strong>container orchestration platform</strong>. It takes your containerized workloads and handles scheduling, scaling, networking, and self-healing across a fleet of machines. Think of it as a datacenter operating system: you declare what you want running, and K8s converges reality toward that desired state.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label c">Declarative</div>
+    <p>You write YAML manifests describing the desired state. K8s controllers continuously reconcile actual → desired.</p>
+  </div>
+  <div class="card">
+    <div class="card-label g">Self-Healing</div>
+    <p>Crashed container? K8s restarts it. Node dies? Workloads get rescheduled elsewhere automatically.</p>
+  </div>
+  <div class="card">
+    <div class="card-label o">Extensible</div>
+    <p>CRDs, admission webhooks, operators, and CSI/CNI/CRI plugins let you extend every layer.</p>
+  </div>
+</div>
+
+<div class="callout info">
+  <span class="icon">🔑</span>
+  <span class="callout-text"><strong>Security mental model:</strong> K8s is an API-driven system. Every object (pod, secret, role) is a resource in its API. Securing K8s means securing API access, workload isolation, network paths, and the software supply chain.</span>
+</div>
+</section>
+
+<!-- ────────────────── 02 ────────────────── -->
+<section id="s2">
+<h2><span class="sec-num">02</span> Architecture Deep-Dive</h2>
+<p>A cluster has two planes: the <strong>control plane</strong> (the brain) and <strong>worker nodes</strong> (the muscle). Understanding what each component does is essential for knowing what to protect.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Cluster Architecture</div>
+
+  <div class="arch-label">Control Plane</div>
+  <div class="arch-row">
+    <div class="arch-box control">kube-apiserver<br><small style="font-size:10px;opacity:.7">all requests enter here</small></div>
+    <div class="arch-box control">etcd<br><small style="font-size:10px;opacity:.7">cluster state store</small></div>
+    <div class="arch-box control">kube-scheduler<br><small style="font-size:10px;opacity:.7">places pods on nodes</small></div>
+    <div class="arch-box control">controller-manager<br><small style="font-size:10px;opacity:.7">reconciliation loops</small></div>
+  </div>
+
+  <div class="arch-arrow">↕ &nbsp;TLS + AuthN/AuthZ&nbsp; ↕</div>
+
+  <div class="arch-label">Worker Nodes (× N)</div>
+  <div class="arch-row">
+    <div class="arch-box worker">kubelet<br><small style="font-size:10px;opacity:.7">node agent</small></div>
+    <div class="arch-box worker">kube-proxy<br><small style="font-size:10px;opacity:.7">service networking</small></div>
+    <div class="arch-box worker">container runtime<br><small style="font-size:10px;opacity:.7">containerd / CRI-O</small></div>
+  </div>
+</div>
+
+<h3>Component Security Implications</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Component</th><th>What It Does</th><th style="color:var(--red)">If Compromised…</th></tr>
+  <tr>
+    <td><code>kube-apiserver</code></td>
+    <td>Front door for all API calls. AuthN → AuthZ → Admission → etcd.</td>
+    <td>Full cluster takeover. Every object is readable/writable.</td>
+  </tr>
+  <tr>
+    <td><code>etcd</code></td>
+    <td>Distributed key-value store holding all cluster state, including Secrets.</td>
+    <td>All secrets in plaintext (unless encryption-at-rest). Complete state extraction.</td>
+  </tr>
+  <tr>
+    <td><code>kubelet</code></td>
+    <td>Runs pods on each node, exposes a local API on port 10250.</td>
+    <td>Exec into any pod on that node, read secrets mounted on that node.</td>
+  </tr>
+  <tr>
+    <td><code>kube-proxy</code></td>
+    <td>Programs iptables/IPVS rules for Service routing.</td>
+    <td>Traffic interception and man-in-the-middle on the node's network.</td>
+  </tr>
+  <tr>
+    <td><code>scheduler</code></td>
+    <td>Decides which node runs which pod.</td>
+    <td>Workload steering — force sensitive pods to attacker-controlled nodes.</td>
+  </tr>
+</table>
+</div>
+
+<div class="callout warn">
+  <span class="icon">⚠</span>
+  <span class="callout-text"><strong>etcd is the crown jewel.</strong> Anyone with direct etcd access bypasses all K8s RBAC entirely. Always encrypt etcd at rest, restrict network access to it, and use TLS client certs.</span>
+</div>
+</section>
+
+<!-- ────────────────── 03 ────────────────── -->
+<section id="s3">
+<h2><span class="sec-num">03</span> Core Objects</h2>
+<p>K8s resources are organized in a hierarchy. Understanding this is critical for scoping RBAC and policies.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Object Hierarchy</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="arch-row">
+      <div class="arch-box neutral" style="flex:0 0 100%">Cluster-scoped: Node, Namespace, ClusterRole, PV, CRD</div>
+    </div>
+    <div class="arch-arrow">↓ contains ↓</div>
+    <div class="arch-row">
+      <div class="arch-box neutral" style="flex:0 0 100%">Namespace-scoped: Pod, Deployment, Service, Secret, ConfigMap, Role, SA, NetworkPolicy</div>
+    </div>
+  </div>
+</div>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label c">Pod</div>
+    <p>Smallest deployable unit. One or more containers sharing network namespace and storage volumes. <strong>Every pod gets a unique IP.</strong></p>
+  </div>
+  <div class="card">
+    <div class="card-label c">Deployment</div>
+    <p>Manages ReplicaSets for stateless apps. Handles rolling updates and rollbacks. You almost never create bare pods.</p>
+  </div>
+  <div class="card">
+    <div class="card-label g">Service</div>
+    <p>Stable network endpoint (ClusterIP, NodePort, LoadBalancer) that load-balances across pod replicas. DNS entry auto-created.</p>
+  </div>
+  <div class="card">
+    <div class="card-label o">ServiceAccount</div>
+    <p>Identity for pods. Auto-mounted JWT token used to authenticate to the API server. <strong>A key attack vector if over-privileged.</strong></p>
+  </div>
+  <div class="card">
+    <div class="card-label r">Secret</div>
+    <p>Base64-encoded (NOT encrypted by default) blobs for credentials, tokens, TLS certs. Mounted as files or env vars.</p>
+  </div>
+  <div class="card">
+    <div class="card-label p">Namespace</div>
+    <p>Logical partition for multi-tenancy. RBAC, NetworkPolicy, and ResourceQuotas are scoped to namespaces.</p>
+  </div>
+</div>
+</section>
+
+<!-- ────────────────── 04 ────────────────── -->
+<section id="s4">
+<h2><span class="sec-num">04</span> Networking Model</h2>
+<p>K8s networking has three fundamental rules: every pod gets its own IP, every pod can reach every other pod (no NAT), and nodes can reach all pods. <strong>This means by default, there is zero network segmentation.</strong></p>
+
+<div class="diagram">
+  <div class="diagram-title">Traffic Paths You Must Secure</div>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <div class="attack-layer">
+      <div class="attack-label">External → Cluster</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">Ingress Controller</span>
+        <span class="attack-tag">LoadBalancer Svc</span>
+        <span class="attack-tag">NodePort</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label">Pod ↔ Pod</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">East-West (flat by default)</span>
+        <span class="attack-tag">DNS-based discovery</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label">Pod → API Server</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">SA Token auth</span>
+        <span class="attack-tag">kubernetes.default.svc</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label">Pod → External</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">Egress (unrestricted default)</span>
+        <span class="attack-tag">DNS exfil</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label">Node → Control Plane</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">kubelet → api-server</span>
+        <span class="attack-tag">etcd client port</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <span class="icon">⚠</span>
+  <span class="callout-text"><strong>Flat network = lateral movement paradise.</strong> A compromised pod can reach every other pod in the cluster by default. NetworkPolicies (§08) are the only in-cluster segmentation mechanism.</span>
+</div>
+</section>
+
+<!-- ────────────────── 05 ────────────────── -->
+<section id="s5">
+<h2><span class="sec-num">05</span> Authentication</h2>
+<p>K8s supports multiple authn strategies, evaluated in order. Understanding these is critical because <strong>K8s has no built-in user database</strong> — "users" exist only as certificate subjects or external identity tokens.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Authentication Flow</div>
+  <div class="flow">
+    <div class="flow-step">Client sends<br>request</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--cyan)">API Server<br>AuthN plugins</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--orange)">AuthZ<br>(RBAC)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--purple)">Admission<br>Controllers</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--green)">etcd<br>(persist)</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+<table>
+  <tr><th>Method</th><th>How It Works</th><th>Security Notes</th></tr>
+  <tr>
+    <td><code>X.509 Client Certs</code></td>
+    <td>CN = username, O = group. Signed by cluster CA.</td>
+    <td>Cannot be revoked without rotating the CA. Long-lived. Avoid for humans.</td>
+  </tr>
+  <tr>
+    <td><code>Bearer Tokens (SA)</code></td>
+    <td>JWT mounted into pods at <code>/var/run/secrets/…</code></td>
+    <td>Audience-bound, short-lived (v1.24+). Disable auto-mount when not needed.</td>
+  </tr>
+  <tr>
+    <td><code>OIDC</code></td>
+    <td>Delegates to an external IdP (Okta, Azure AD, etc.).</td>
+    <td>Preferred for human users. Supports MFA, token rotation, centralized revocation.</td>
+  </tr>
+  <tr>
+    <td><code>Webhook Token</code></td>
+    <td>API server calls external service to validate tokens.</td>
+    <td>Flexible but adds latency and an external dependency.</td>
+  </tr>
+</table>
+</div>
+
+<div class="callout tip">
+  <span class="icon">✓</span>
+  <span class="callout-text"><strong>Best practice:</strong> Use OIDC for human access, short-lived ServiceAccount tokens for workloads, and disable anonymous auth (<code>--anonymous-auth=false</code>).</span>
+</div>
+</section>
+
+<!-- ────────────────── 06 ────────────────── -->
+<section id="s6">
+<h2><span class="sec-num">06</span> RBAC (Role-Based Access Control)</h2>
+<p>RBAC is the authorization layer. It determines <strong>who</strong> (subject) can do <strong>what</strong> (verbs) on <strong>which resources</strong> (objects). There are four RBAC objects:</p>
+
+<div class="diagram">
+  <div class="diagram-title">RBAC Object Relationships</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+    <div class="arch-box control" style="flex:0 0 auto;">Role / ClusterRole<br><small style="font-size:10px;opacity:.7">defines permissions</small></div>
+    <div style="font-family:'IBM Plex Mono';color:var(--text-dim);font-size:20px;">←binds→</div>
+    <div class="arch-box worker" style="flex:0 0 auto;">RoleBinding / ClusterRoleBinding<br><small style="font-size:10px;opacity:.7">attaches role to subject</small></div>
+    <div style="font-family:'IBM Plex Mono';color:var(--text-dim);font-size:20px;">→</div>
+    <div class="arch-box purple" style="flex:0 0 auto;">Subject<br><small style="font-size:10px;opacity:.7">User, Group, or SA</small></div>
+  </div>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>role-least-privilege.yaml</div>
+<pre><span class="comment"># Good: scoped to specific resources and verbs</span>
+<span class="key">apiVersion:</span> <span class="val">rbac.authorization.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">Role</span>
+<span class="key">metadata:</span>
+  <span class="key">namespace:</span> <span class="val">payments</span>
+  <span class="key">name:</span> <span class="val">pod-reader</span>
+<span class="key">rules:</span>
+- <span class="key">apiGroups:</span> [<span class="str">""</span>]
+  <span class="key">resources:</span> [<span class="str">"pods"</span>, <span class="str">"pods/log"</span>]
+  <span class="key">verbs:</span> [<span class="str">"get"</span>, <span class="str">"list"</span>, <span class="str">"watch"</span>]
+  <span class="comment"># ✗ Never use ["*"] for verbs</span>
+  <span class="comment"># ✗ Never bind cluster-admin to a ServiceAccount</span></pre>
+</div>
+
+<h3>Dangerous RBAC Anti-Patterns</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Anti-Pattern</th><th>Risk</th></tr>
+  <tr><td>Binding <code>cluster-admin</code> to default SA</td><td>Any pod in that namespace = full cluster admin</td></tr>
+  <tr><td>Wildcard verbs <code>["*"]</code></td><td>Includes escalation verbs like <code>create pods/exec</code></td></tr>
+  <tr><td>ClusterRoleBinding when RoleBinding suffices</td><td>Grants permissions across all namespaces</td></tr>
+  <tr><td><code>escalate</code>, <code>bind</code>, <code>impersonate</code> verbs</td><td>Allow self-escalation to higher privileges</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ────────────────── 07 ────────────────── -->
+<section id="s7">
+<h2><span class="sec-num">07</span> Pod Security</h2>
+<p>The <code>securityContext</code> on a pod/container controls Linux kernel capabilities, user IDs, filesystem access, and privilege escalation. Pod Security Admission (PSA) enforces profiles cluster-wide.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Pod Security Standards (PSA Profiles)</div>
+  <div class="arch-row">
+    <div class="arch-box worker" style="text-align:left">
+      <strong>Privileged</strong><br>
+      <small style="font-size:10px;opacity:.7">No restrictions. System-level workloads only.</small>
+    </div>
+    <div class="arch-box warn" style="text-align:left">
+      <strong>Baseline</strong><br>
+      <small style="font-size:10px;opacity:.7">Prevents known escalations. Sensible default.</small>
+    </div>
+    <div class="arch-box control" style="text-align:left">
+      <strong>Restricted</strong><br>
+      <small style="font-size:10px;opacity:.7">Hardened. Non-root, drop all caps, read-only root.</small>
+    </div>
+  </div>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>hardened-pod.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
+<span class="key">kind:</span> <span class="val">Pod</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">secure-app</span>
+<span class="key">spec:</span>
+  <span class="key">automountServiceAccountToken:</span> <span class="danger-val">false</span>   <span class="comment"># don't mount SA token</span>
+  <span class="key">securityContext:</span>
+    <span class="key">runAsNonRoot:</span> <span class="val">true</span>
+    <span class="key">runAsUser:</span> <span class="val">10001</span>
+    <span class="key">runAsGroup:</span> <span class="val">10001</span>
+    <span class="key">fsGroup:</span> <span class="val">10001</span>
+    <span class="key">seccompProfile:</span>
+      <span class="key">type:</span> <span class="val">RuntimeDefault</span>
+  <span class="key">containers:</span>
+  - <span class="key">name:</span> <span class="val">app</span>
+    <span class="key">image:</span> <span class="val">registry.example.com/app:v2.1.0@sha256:abc...</span>
+    <span class="key">securityContext:</span>
+      <span class="key">allowPrivilegeEscalation:</span> <span class="danger-val">false</span>
+      <span class="key">readOnlyRootFilesystem:</span> <span class="val">true</span>
+      <span class="key">capabilities:</span>
+        <span class="key">drop:</span> [<span class="str">"ALL"</span>]
+    <span class="key">resources:</span>
+      <span class="key">limits:</span>
+        <span class="key">cpu:</span> <span class="str">"500m"</span>
+        <span class="key">memory:</span> <span class="str">"256Mi"</span></pre>
+</div>
+
+<div class="callout tip">
+  <span class="icon">✓</span>
+  <span class="callout-text"><strong>Golden rule:</strong> Non-root, drop ALL capabilities, read-only root filesystem, RuntimeDefault seccomp, no privilege escalation. Start here and only loosen if the workload genuinely breaks.</span>
+</div>
+</section>
+
+<!-- ────────────────── 08 ────────────────── -->
+<section id="s8">
+<h2><span class="sec-num">08</span> Network Policies</h2>
+<p>NetworkPolicies are K8s-native firewalls. They're namespace-scoped and use label selectors to define allowed traffic. <strong>Without any NetworkPolicy, all ingress and egress is allowed.</strong></p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>default-deny-all.yaml — APPLY THIS FIRST</div>
+<pre><span class="comment"># Step 1: Deny everything in the namespace</span>
+<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">default-deny-all</span>
+  <span class="key">namespace:</span> <span class="val">payments</span>
+<span class="key">spec:</span>
+  <span class="key">podSelector:</span> {}        <span class="comment"># matches all pods</span>
+  <span class="key">policyTypes:</span>
+  - <span class="val">Ingress</span>
+  - <span class="val">Egress</span>              <span class="comment"># no rules = deny all</span></pre>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>allow-specific.yaml — then whitelist</div>
+<pre><span class="comment"># Step 2: Allow only what's needed</span>
+<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">allow-frontend-to-api</span>
+  <span class="key">namespace:</span> <span class="val">payments</span>
+<span class="key">spec:</span>
+  <span class="key">podSelector:</span>
+    <span class="key">matchLabels:</span>
+      <span class="key">app:</span> <span class="val">api</span>
+  <span class="key">policyTypes:</span> [<span class="val">Ingress</span>]
+  <span class="key">ingress:</span>
+  - <span class="key">from:</span>
+    - <span class="key">podSelector:</span>
+        <span class="key">matchLabels:</span>
+          <span class="key">app:</span> <span class="val">frontend</span>
+    <span class="key">ports:</span>
+    - <span class="key">port:</span> <span class="val">8080</span>
+      <span class="key">protocol:</span> <span class="val">TCP</span></pre>
+</div>
+
+<div class="callout info">
+  <span class="icon">🔑</span>
+  <span class="callout-text"><strong>CNI requirement:</strong> NetworkPolicies only work if your CNI plugin supports them. Calico, Cilium, and Weave do. The default AWS VPC CNI does not enforce them natively (use Calico addon). Always verify enforcement with a test.</span>
+</div>
+</section>
+
+<!-- ────────────────── 09 ────────────────── -->
+<section id="s9">
+<h2><span class="sec-num">09</span> Secrets Management</h2>
+<p>K8s Secrets are base64-encoded, <strong>not encrypted</strong> by default. Anyone with RBAC access to Secrets in a namespace can read them. They're also visible in etcd unless encryption-at-rest is configured.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Where Secrets Leak</div>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--red)">etcd</div>
+      <div class="attack-bar high"><span class="attack-tag">Stored as plaintext (default)</span><span class="attack-tag">Backup files</span></div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">API Server</div>
+      <div class="attack-bar med"><span class="attack-tag">RBAC too broad</span><span class="attack-tag">Watch events</span></div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Pod Env Vars</div>
+      <div class="attack-bar med"><span class="attack-tag">Visible in /proc</span><span class="attack-tag">Crash dumps</span><span class="attack-tag">Logs</span></div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">tmpfs Mount</div>
+      <div class="attack-bar med"><span class="attack-tag">On-disk in node memory</span><span class="attack-tag">Container escape</span></div>
+    </div>
+  </div>
+</div>
+
+<h3>Hardening Secrets</h3>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label r">Encrypt at Rest</div>
+    <p>Configure <code>EncryptionConfiguration</code> on the API server with AES-CBC or KMS provider (AWS KMS, GCP KMS, Vault Transit).</p>
+  </div>
+  <div class="card">
+    <div class="card-label o">External Secrets</div>
+    <p>Use <strong>External Secrets Operator</strong> or <strong>Secrets Store CSI Driver</strong> to sync from Vault, AWS Secrets Manager, etc.</p>
+  </div>
+  <div class="card">
+    <div class="card-label g">Limit RBAC</div>
+    <p>Only grant <code>get</code> on specific Secret names, never <code>list</code> or <code>watch</code> on all Secrets in a namespace.</p>
+  </div>
+  <div class="card">
+    <div class="card-label c">Volume Mounts &gt; Env Vars</div>
+    <p>Mounted secrets auto-rotate via kubelet. Env vars are baked in at pod start and visible in <code>/proc/1/environ</code>.</p>
+  </div>
+</div>
+</section>
+
+<!-- ────────────────── 10 ────────────────── -->
+<section id="s10">
+<h2><span class="sec-num">10</span> Image &amp; Supply Chain Security</h2>
+<p>Your cluster is only as secure as the images running in it. A compromised base image or a hijacked dependency means game over regardless of your RBAC and NetworkPolicies.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Secure Supply Chain Pipeline</div>
+  <div class="flow">
+    <div class="flow-step" style="border-color:var(--cyan)">Code<br>Commit</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--orange)">SAST /<br>SCA Scan</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--green)">Build<br>(CI)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--purple)">Sign<br>(cosign)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--orange)">Vuln Scan<br>(Trivy)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--cyan)">Push to<br>Registry</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--red)">Admission<br>Verify Sig</div>
+  </div>
+</div>
+
+<ul class="checklist">
+  <li>Use <strong>digest pinning</strong> (<code>image: app@sha256:...</code>) instead of mutable tags like <code>:latest</code></li>
+  <li>Sign images with <strong>Sigstore/cosign</strong> and verify with a policy engine at admission</li>
+  <li>Scan images in CI <em>and</em> continuously in the registry (new CVEs emerge daily)</li>
+  <li>Use minimal base images — <strong>distroless</strong> or <strong>scratch</strong> — to reduce attack surface</li>
+  <li>Enforce <strong>allowlisted registries</strong> via OPA/Gatekeeper or Kyverno</li>
+  <li>Generate and attest <strong>SBOMs</strong> (Software Bill of Materials) for each build</li>
+</ul>
+</section>
+
+<!-- ────────────────── 11 ────────────────── -->
+<section id="s11">
+<h2><span class="sec-num">11</span> Audit Logging</h2>
+<p>K8s audit logs record every request to the API server: who did what, when, to which resource, and whether it was allowed. This is your forensic trail.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Audit Event Stages</div>
+  <div class="flow">
+    <div class="flow-step">RequestReceived<br><small style="opacity:.6">before authz</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">ResponseStarted<br><small style="opacity:.6">headers sent</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">ResponseComplete<br><small style="opacity:.6">body sent</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--red)">Panic<br><small style="opacity:.6">if server panics</small></div>
+  </div>
+</div>
+
+<div class="table-wrap">
+<table>
+  <tr><th>Level</th><th>What's Logged</th><th>When to Use</th></tr>
+  <tr><td><code>None</code></td><td>Nothing</td><td>Known noisy health checks</td></tr>
+  <tr><td><code>Metadata</code></td><td>User, verb, resource, timestamp</td><td>Most resources — good default</td></tr>
+  <tr><td><code>Request</code></td><td>Metadata + request body</td><td>Mutations to sensitive resources (RBAC, Secrets)</td></tr>
+  <tr><td><code>RequestResponse</code></td><td>Metadata + request + response body</td><td>High-value forensics (use sparingly, very verbose)</td></tr>
+</table>
+</div>
+
+<h3>Key Events to Alert On</h3>
+<ul class="checklist">
+  <li>Secrets accessed outside of expected ServiceAccounts</li>
+  <li><code>create pods/exec</code> — someone exec'ing into a container</li>
+  <li>ClusterRoleBinding creation or modification</li>
+  <li>Requests from <code>system:anonymous</code> or <code>system:unauthenticated</code></li>
+  <li>403 / 401 spikes (brute force or credential stuffing)</li>
+  <li>Pod creation in <code>kube-system</code> not by known controllers</li>
+</ul>
+</section>
+
+<!-- ────────────────── 12 ────────────────── -->
+<section id="s12">
+<h2><span class="sec-num">12</span> Service Mesh &amp; mTLS</h2>
+<p>A service mesh adds a sidecar proxy (Envoy, usually) to every pod, giving you transparent <strong>mutual TLS</strong>, traffic policies, and observability — without changing application code.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Service Mesh — Pod-to-Pod Communication</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:12px;font-family:'IBM Plex Mono';color:var(--green);margin-bottom:6px;">Pod A</div>
+      <div class="arch-row" style="gap:6px;margin:0;">
+        <div class="arch-box neutral" style="font-size:11px;min-width:70px;padding:6px 8px;">app</div>
+        <div class="arch-box control" style="font-size:11px;min-width:70px;padding:6px 8px;">envoy<br>proxy</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;font-family:'IBM Plex Mono';font-size:11px;color:var(--text-dim);">
+      <div>mTLS encrypted</div>
+      <div style="font-size:18px;">⇄</div>
+      <div>identity verified</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:12px;font-family:'IBM Plex Mono';color:var(--green);margin-bottom:6px;">Pod B</div>
+      <div class="arch-row" style="gap:6px;margin:0;">
+        <div class="arch-box control" style="font-size:11px;min-width:70px;padding:6px 8px;">envoy<br>proxy</div>
+        <div class="arch-box neutral" style="font-size:11px;min-width:70px;padding:6px 8px;">app</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label c">Istio</div>
+    <p>Most feature-rich. Has AuthorizationPolicy for L7 access control (paths, headers, JWT claims). Heavy operational burden.</p>
+  </div>
+  <div class="card">
+    <div class="card-label g">Linkerd</div>
+    <p>Lightweight, Rust-based data plane. Auto-mTLS with zero config. Less L7 policy granularity than Istio.</p>
+  </div>
+  <div class="card">
+    <div class="card-label p">Cilium</div>
+    <p>eBPF-based — no sidecar. Combines CNI + NetworkPolicy + mTLS + observability. Rising standard for security-focused clusters.</p>
+  </div>
+</div>
+</section>
+
+<!-- ────────────────── 13 ────────────────── -->
+<section id="s13">
+<h2><span class="sec-num">13</span> Attack Surface Map</h2>
+<p>Here's the full picture of where an attacker targets a K8s cluster, from external access to container escape. As a security engineer, you should have controls at every layer.</p>
+
+<div class="diagram">
+  <div class="diagram-title">K8s Attack Taxonomy</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--red)">Initial Access</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">Exposed Dashboard</span>
+        <span class="attack-tag">Open Kubelet API</span>
+        <span class="attack-tag">Leaked kubeconfig</span>
+        <span class="attack-tag">SSRF → metadata API</span>
+        <span class="attack-tag">Vulnerable app in pod</span>
+      </div>
+    </div>
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Execution</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">kubectl exec</span>
+        <span class="attack-tag">Backdoor container</span>
+        <span class="attack-tag">Cronjob injection</span>
+        <span class="attack-tag">Sidecar injection</span>
+      </div>
+    </div>
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Persistence</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">Static pod on node</span>
+        <span class="attack-tag">Mutating webhook</span>
+        <span class="attack-tag">CronJob</span>
+        <span class="attack-tag">DaemonSet</span>
+      </div>
+    </div>
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Priv Escalation</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">Privileged pod</span>
+        <span class="attack-tag">hostPID / hostNetwork</span>
+        <span class="attack-tag">Over-permissive SA</span>
+        <span class="attack-tag">Node access via pod</span>
+      </div>
+    </div>
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--red)">Lateral Movement</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">Flat network (no NetPol)</span>
+        <span class="attack-tag">SA token to API server</span>
+        <span class="attack-tag">DNS discovery</span>
+        <span class="attack-tag">Shared volumes</span>
+      </div>
+    </div>
+
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--red)">Data Exfil</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">Secrets via API</span>
+        <span class="attack-tag">DNS tunneling</span>
+        <span class="attack-tag">Egress to C2</span>
+        <span class="attack-tag">Cloud metadata (169.254.169.254)</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="callout info">
+  <span class="icon">🔑</span>
+  <span class="callout-text"><strong>MITRE ATT&CK for Containers</strong> and the <strong>Microsoft Threat Matrix for Kubernetes</strong> are structured references that map these techniques. Use them for threat modeling engagements and red team scenarios.</span>
+</div>
+</section>
+
+<!-- ────────────────── 14 ────────────────── -->
+<section id="s14">
+<h2><span class="sec-num">14</span> Hardening Checklist</h2>
+<p>A senior-level summary of the controls you should implement or verify. Organize your assessment around these layers.</p>
+
+<h3>API Server &amp; Control Plane</h3>
+<ul class="checklist">
+  <li>Disable anonymous auth (<code>--anonymous-auth=false</code>)</li>
+  <li>Enable audit logging with a policy that captures mutations to sensitive resources</li>
+  <li>Use OIDC for human auth; short-lived SA tokens for workloads</li>
+  <li>Restrict API server network access (private endpoint or IP allowlist)</li>
+  <li>Encrypt etcd at rest with KMS provider</li>
+  <li>Disable the <code>system:masters</code> group in CI/CD pipelines</li>
+</ul>
+
+<h3>Workload &amp; Pods</h3>
+<ul class="checklist">
+  <li>Enforce Pod Security Admission at <strong>Restricted</strong> level (namespace labels)</li>
+  <li>Run as non-root, drop all capabilities, read-only rootfs</li>
+  <li>Set <code>automountServiceAccountToken: false</code> unless the pod needs API access</li>
+  <li>Set CPU/memory limits to prevent resource abuse (crypto mining)</li>
+  <li>Use RuntimeDefault seccomp profile (or custom)</li>
+  <li>Use AppArmor or SELinux profiles where supported</li>
+</ul>
+
+<h3>Network</h3>
+<ul class="checklist">
+  <li>Apply <strong>default-deny</strong> NetworkPolicy in every namespace, then whitelist</li>
+  <li>Restrict egress — especially block <code>169.254.169.254</code> (cloud metadata) from pods</li>
+  <li>Use a CNI that supports NetworkPolicy enforcement (Calico, Cilium)</li>
+  <li>Enable mTLS via service mesh or Cilium for east-west encryption</li>
+  <li>Secure Ingress with WAF, rate limiting, and TLS termination</li>
+</ul>
+
+<h3>Supply Chain</h3>
+<ul class="checklist">
+  <li>Pin images by digest, not tags</li>
+  <li>Sign and verify images (cosign + policy engine)</li>
+  <li>Scan images for vulnerabilities in CI and continuously in registry</li>
+  <li>Use distroless / minimal base images</li>
+  <li>Restrict image sources with OPA/Gatekeeper/Kyverno allowlists</li>
+</ul>
+
+<h3>Secrets</h3>
+<ul class="checklist">
+  <li>Enable encryption at rest for K8s Secrets (EncryptionConfiguration)</li>
+  <li>Prefer external secrets managers (Vault, cloud KMS) via CSI driver or operator</li>
+  <li>Mount secrets as volumes, not env vars</li>
+  <li>Scope RBAC to specific Secret names, not <code>secrets/*</code></li>
+</ul>
+
+<h3>Runtime &amp; Monitoring</h3>
+<ul class="checklist">
+  <li>Deploy runtime threat detection (Falco, Tetragon, or cloud-native equivalent)</li>
+  <li>Alert on: exec into pods, privileged pod creation, SA token usage anomalies</li>
+  <li>Centralize logs (audit, application, system) in a SIEM</li>
+  <li>Run CIS Kubernetes Benchmark (kube-bench) regularly</li>
+  <li>Periodically threat-model with the MITRE ATT&CK for Containers matrix</li>
+</ul>
+
+<div class="callout tip" style="margin-top:28px">
+  <span class="icon">✓</span>
+  <span class="callout-text"><strong>Tools to know:</strong> <code>kube-bench</code> (CIS benchmark), <code>kubeaudit</code> (manifest auditing), <code>Trivy</code> (image + IaC scanning), <code>Falco</code> (runtime detection), <code>OPA/Gatekeeper</code> or <code>Kyverno</code> (policy engine), <code>kubescape</code> (NSA/CISA hardening), <code>Tetragon</code> (eBPF observability).</span>
+</div>
+
+</section>
+
+<!-- ────────────────── 15 ────────────────── -->
+<section id="s15">
+<h2><span class="sec-num">15</span> Hands-On: Deploy a Tomcat App</h2>
+<p>Theory without practice is incomplete. This section walks through taking a <strong>typical Java web application packaged as a .war inside a zip</strong> and getting it running on Kubernetes — the "insecure-but-working" way first, so you understand the baseline before hardening it in §16.</p>
+
+<div class="callout info">
+  <span class="icon">📦</span>
+  <span class="callout-text"><strong>Scenario:</strong> You receive <code>myapp.zip</code> containing a compiled <code>myapp.war</code>, a <code>server.xml</code> with custom Tomcat configuration, and a <code>setenv.sh</code> for JVM options. Your goal: containerize it and deploy to a K8s cluster.</span>
+</div>
+
+<h3>Step 1 — Extract &amp; Examine the Zip</h3>
+<p>Start by understanding what's inside. Developers often bundle configs, environment-specific properties, and sometimes credentials in the zip.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal</div>
+<pre><span class="comment"># Unpack and inspect</span>
+<span class="val">$</span> unzip myapp.zip -d myapp/
+<span class="val">$</span> tree myapp/
+myapp/
+├── myapp.war
+├── server.xml
+├── setenv.sh
+└── db-config.properties    <span class="comment"># ← watch out — might contain creds!</span>
+
+<span class="comment"># Check for embedded secrets</span>
+<span class="val">$</span> grep -ri "password\|secret\|key" myapp/
+<span class="danger-val">db-config.properties:db.password=Pr0d_S3cret!</span>   <span class="comment"># ← found one</span></pre>
+</div>
+
+<div class="callout warn">
+  <span class="icon">⚠</span>
+  <span class="callout-text"><strong>Red flag:</strong> Credentials in the zip. These must be extracted, stored in a K8s Secret (or external secrets manager), and injected at runtime — never baked into the image. We'll address this in §16.</span>
+</div>
+
+<h3>Step 2 — Write the Dockerfile</h3>
+<p>Use the official Tomcat base image and copy the WAR into the <code>webapps</code> directory. Tomcat auto-deploys it on startup.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>Dockerfile</div>
+<pre><span class="comment"># Start with the official Tomcat image</span>
+<span class="key">FROM</span> <span class="val">tomcat:10.1-jdk17</span>
+
+<span class="comment"># Remove default apps (manager, host-manager, ROOT) — attack surface</span>
+<span class="key">RUN</span> <span class="val">rm -rf /usr/local/tomcat/webapps/*</span>
+
+<span class="comment"># Copy in the WAR file</span>
+<span class="key">COPY</span> <span class="val">myapp/myapp.war /usr/local/tomcat/webapps/ROOT.war</span>
+
+<span class="comment"># Copy custom server.xml</span>
+<span class="key">COPY</span> <span class="val">myapp/server.xml /usr/local/tomcat/conf/server.xml</span>
+
+<span class="comment"># Copy JVM settings</span>
+<span class="key">COPY</span> <span class="val">myapp/setenv.sh /usr/local/tomcat/bin/setenv.sh</span>
+
+<span class="comment"># Expose the default Tomcat port</span>
+<span class="key">EXPOSE</span> <span class="val">8080</span>
+
+<span class="key">CMD</span> [<span class="str">"catalina.sh"</span>, <span class="str">"run"</span>]</pre>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — build &amp; push</div>
+<pre><span class="comment"># Build the image</span>
+<span class="val">$</span> docker build -t registry.example.com/myapp:v1.0.0 .
+
+<span class="comment"># Push to your container registry</span>
+<span class="val">$</span> docker push registry.example.com/myapp:v1.0.0</pre>
+</div>
+
+<h3>Step 3 — Create the Kubernetes Namespace</h3>
+<p>Always deploy into a dedicated namespace — never into <code>default</code>. This scopes RBAC, NetworkPolicies, and resource quotas.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>namespace.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
+<span class="key">kind:</span> <span class="val">Namespace</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">labels:</span>
+    <span class="key">team:</span> <span class="val">backend</span></pre>
+</div>
+
+<h3>Step 4 — Write the Deployment</h3>
+<p>A Deployment manages pod replicas and handles rolling updates. This is the "get it running" version — intentionally <strong>not</strong> hardened yet.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>deployment.yaml — basic (unhardened)</div>
+<pre><span class="key">apiVersion:</span> <span class="val">apps/v1</span>
+<span class="key">kind:</span> <span class="val">Deployment</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">replicas:</span> <span class="val">2</span>
+  <span class="key">selector:</span>
+    <span class="key">matchLabels:</span>
+      <span class="key">app:</span> <span class="val">tomcat-app</span>
+  <span class="key">template:</span>
+    <span class="key">metadata:</span>
+      <span class="key">labels:</span>
+        <span class="key">app:</span> <span class="val">tomcat-app</span>
+    <span class="key">spec:</span>
+      <span class="key">containers:</span>
+      - <span class="key">name:</span> <span class="val">tomcat</span>
+        <span class="key">image:</span> <span class="val">registry.example.com/myapp:v1.0.0</span>
+        <span class="key">ports:</span>
+        - <span class="key">containerPort:</span> <span class="val">8080</span>
+        <span class="key">env:</span>
+        - <span class="key">name:</span> <span class="val">DB_PASSWORD</span>           <span class="comment"># ← BAD: secret in env var</span>
+          <span class="key">value:</span> <span class="danger-val">"Pr0d_S3cret!"</span>
+        <span class="key">readinessProbe:</span>
+          <span class="key">httpGet:</span>
+            <span class="key">path:</span> <span class="val">/</span>
+            <span class="key">port:</span> <span class="val">8080</span>
+          <span class="key">initialDelaySeconds:</span> <span class="val">15</span>
+          <span class="key">periodSeconds:</span> <span class="val">5</span>
+        <span class="key">livenessProbe:</span>
+          <span class="key">httpGet:</span>
+            <span class="key">path:</span> <span class="val">/</span>
+            <span class="key">port:</span> <span class="val">8080</span>
+          <span class="key">initialDelaySeconds:</span> <span class="val">30</span>
+          <span class="key">periodSeconds:</span> <span class="val">10</span></pre>
+</div>
+
+<h3>Step 5 — Create the Service</h3>
+<p>A Service gives your pods a stable network endpoint. Use <code>ClusterIP</code> for internal-only access, or <code>LoadBalancer</code> to expose externally.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>service.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
+<span class="key">kind:</span> <span class="val">Service</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">selector:</span>
+    <span class="key">app:</span> <span class="val">tomcat-app</span>
+  <span class="key">ports:</span>
+  - <span class="key">port:</span> <span class="val">80</span>
+    <span class="key">targetPort:</span> <span class="val">8080</span>
+    <span class="key">protocol:</span> <span class="val">TCP</span>
+  <span class="key">type:</span> <span class="val">ClusterIP</span></pre>
+</div>
+
+<h3>Step 6 — Expose via Ingress</h3>
+<p>An Ingress routes external HTTP(S) traffic to your Service. In production you'd terminate TLS here.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>ingress.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">Ingress</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+  <span class="key">annotations:</span>
+    <span class="key">nginx.ingress.kubernetes.io/rewrite-target:</span> <span class="val">/</span>
+<span class="key">spec:</span>
+  <span class="key">ingressClassName:</span> <span class="val">nginx</span>
+  <span class="key">rules:</span>
+  - <span class="key">host:</span> <span class="val">myapp.example.com</span>
+    <span class="key">http:</span>
+      <span class="key">paths:</span>
+      - <span class="key">path:</span> <span class="val">/</span>
+        <span class="key">pathType:</span> <span class="val">Prefix</span>
+        <span class="key">backend:</span>
+          <span class="key">service:</span>
+            <span class="key">name:</span> <span class="val">tomcat-app</span>
+            <span class="key">port:</span>
+              <span class="key">number:</span> <span class="val">80</span></pre>
+</div>
+
+<h3>Step 7 — Deploy Everything</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — apply &amp; verify</div>
+<pre><span class="comment"># Apply all manifests</span>
+<span class="val">$</span> kubectl apply -f namespace.yaml
+<span class="val">$</span> kubectl apply -f deployment.yaml
+<span class="val">$</span> kubectl apply -f service.yaml
+<span class="val">$</span> kubectl apply -f ingress.yaml
+
+<span class="comment"># Watch pods come up</span>
+<span class="val">$</span> kubectl get pods -n tomcat-app -w
+NAME                          READY   STATUS    RESTARTS   AGE
+tomcat-app-6d8f9b7c4d-k2x9p  1/1     Running   0          42s
+tomcat-app-6d8f9b7c4d-m8n3q  1/1     Running   0          42s
+
+<span class="comment"># Verify the service endpoint</span>
+<span class="val">$</span> kubectl get svc -n tomcat-app
+NAME         TYPE        CLUSTER-IP      PORT(S)
+tomcat-app   ClusterIP   10.96.142.87    80/TCP
+
+<span class="comment"># Test connectivity from inside the cluster</span>
+<span class="val">$</span> kubectl run curl-test --rm -it --image=curlimages/curl -- \
+    curl -s http://tomcat-app.tomcat-app.svc.cluster.local/</pre>
+</div>
+
+<div class="diagram">
+  <div class="diagram-title">What You've Built — Basic Tomcat Deployment</div>
+  <div class="flow">
+    <div class="flow-step" style="border-color:var(--cyan)">Client<br><small style="opacity:.6">browser</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--purple)">Ingress<br><small style="opacity:.6">nginx</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--green)">Service<br><small style="opacity:.6">ClusterIP :80</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--orange)">Pod × 2<br><small style="opacity:.6">Tomcat :8080</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-color:var(--red)">DB<br><small style="opacity:.6">password in env</small></div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <span class="icon">⚠</span>
+  <span class="callout-text"><strong>This deployment works — but it's insecure.</strong> It runs as root, has no resource limits, no network segmentation, a hardcoded password in an env var, uses a mutable tag, and has no security context at all. Section §16 fixes all of this.</span>
+</div>
+</section>
+
+<!-- ────────────────── 16 ────────────────── -->
+<section id="s16">
+<h2><span class="sec-num">16</span> Hands-On: Secure the Deployment</h2>
+<p>Now we take the working Tomcat deployment from §15 and systematically harden it. Each fix maps back to a concept covered earlier in this guide. By the end, you'll have a production-grade, security-reviewed deployment.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Security Hardening — Layer by Layer</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--red)">Image</div>
+      <div class="attack-bar high">
+        <span class="attack-tag">Non-root base</span>
+        <span class="attack-tag">Digest pinning</span>
+        <span class="attack-tag">Strip default apps</span>
+        <span class="attack-tag">Vuln scan</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Pod Spec</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">runAsNonRoot</span>
+        <span class="attack-tag">readOnlyRootFilesystem</span>
+        <span class="attack-tag">Drop ALL caps</span>
+        <span class="attack-tag">seccomp</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--orange)">Secrets</div>
+      <div class="attack-bar med">
+        <span class="attack-tag">K8s Secret object</span>
+        <span class="attack-tag">Volume mount</span>
+        <span class="attack-tag">RBAC scoped</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--green)">Network</div>
+      <div class="attack-bar low">
+        <span class="attack-tag">Default-deny</span>
+        <span class="attack-tag">Ingress whitelist</span>
+        <span class="attack-tag">Egress restricted</span>
+      </div>
+    </div>
+    <div class="attack-layer">
+      <div class="attack-label" style="color:var(--green)">RBAC</div>
+      <div class="attack-bar low">
+        <span class="attack-tag">Dedicated SA</span>
+        <span class="attack-tag">No auto-mount</span>
+        <span class="attack-tag">Least privilege</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>Fix 1 — Harden the Dockerfile (§07, §10)</h3>
+<p>The base <code>tomcat:10.1-jdk17</code> image runs as root and includes default webapps that expose management endpoints. Rebuild with a non-root user and digest-pinned base.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>Dockerfile.hardened</div>
+<pre><span class="comment"># Pin by digest, not tag — prevents supply chain hijack (§10)</span>
+<span class="key">FROM</span> <span class="val">tomcat:10.1-jdk17@sha256:a1b2c3d4e5f6...</span>
+
+<span class="comment"># Remove ALL default webapps — manager, host-manager, docs, examples</span>
+<span class="key">RUN</span> <span class="val">rm -rf /usr/local/tomcat/webapps/* \
+         /usr/local/tomcat/webapps.dist/*</span>
+
+<span class="comment"># Create a non-root user for Tomcat</span>
+<span class="key">RUN</span> <span class="val">groupadd -r tomcat && useradd -r -g tomcat -d /usr/local/tomcat -s /sbin/nologin tomcat</span>
+
+<span class="comment"># Create a writable work directory (needed at runtime)</span>
+<span class="key">RUN</span> <span class="val">mkdir -p /usr/local/tomcat/work /usr/local/tomcat/temp /usr/local/tomcat/logs \
+    && chown -R tomcat:tomcat /usr/local/tomcat</span>
+
+<span class="comment"># Copy application</span>
+<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/myapp.war /usr/local/tomcat/webapps/ROOT.war</span>
+<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/server.xml /usr/local/tomcat/conf/server.xml</span>
+<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/setenv.sh  /usr/local/tomcat/bin/setenv.sh</span>
+
+<span class="comment"># Do NOT copy db-config.properties — secrets come from K8s</span>
+
+<span class="comment"># Switch to non-root (§07)</span>
+<span class="key">USER</span> <span class="val">tomcat</span>
+<span class="key">EXPOSE</span> <span class="val">8080</span>
+<span class="key">CMD</span> [<span class="str">"catalina.sh"</span>, <span class="str">"run"</span>]</pre>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — build, scan, sign</div>
+<pre><span class="comment"># Build</span>
+<span class="val">$</span> docker build -f Dockerfile.hardened -t registry.example.com/myapp:v1.1.0 .
+
+<span class="comment"># Scan for vulnerabilities before pushing (§10)</span>
+<span class="val">$</span> trivy image registry.example.com/myapp:v1.1.0
+<span class="comment"># Fix any CRITICAL/HIGH findings before proceeding</span>
+
+<span class="comment"># Push and sign with cosign (§10)</span>
+<span class="val">$</span> docker push registry.example.com/myapp:v1.1.0
+<span class="val">$</span> cosign sign registry.example.com/myapp:v1.1.0
+
+<span class="comment"># Grab the digest for pinning in K8s manifests</span>
+<span class="val">$</span> docker inspect --format='{{index .RepoDigests 0}}' registry.example.com/myapp:v1.1.0
+registry.example.com/myapp@sha256:7f8e9d...</pre>
+</div>
+
+<h3>Fix 2 — Extract Secrets from the Image (§09)</h3>
+<p>The <code>db-config.properties</code> file containing the password was in the zip. We store it as a K8s Secret and mount it as a volume — never an env var.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — create the secret</div>
+<pre><span class="comment"># Create the secret imperatively (good for one-off; in prod use sealed-secrets or ESO)</span>
+<span class="val">$</span> kubectl create secret generic tomcat-db-creds \
+    --namespace=tomcat-app \
+    --from-literal=db.password='Pr0d_S3cret!' \
+    --from-literal=db.username='app_user'
+
+<span class="comment"># Verify it exists (values are base64, not encrypted by default!)</span>
+<span class="val">$</span> kubectl get secret tomcat-db-creds -n tomcat-app -o yaml</pre>
+</div>
+
+<h3>Fix 3 — Create a Dedicated ServiceAccount (§05, §06)</h3>
+<p>Don't use the <code>default</code> ServiceAccount. Create one with <code>automountServiceAccountToken: false</code> since this app doesn't need to talk to the K8s API.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>serviceaccount.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
+<span class="key">kind:</span> <span class="val">ServiceAccount</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app-sa</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">automountServiceAccountToken:</span> <span class="danger-val">false</span>  <span class="comment"># no API access needed</span></pre>
+</div>
+
+<h3>Fix 4 — Harden the Deployment Spec (§07)</h3>
+<p>Apply every pod security best practice: non-root, drop capabilities, read-only rootfs, resource limits, seccomp, and mount secrets as volumes.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>deployment-hardened.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">apps/v1</span>
+<span class="key">kind:</span> <span class="val">Deployment</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">replicas:</span> <span class="val">2</span>
+  <span class="key">selector:</span>
+    <span class="key">matchLabels:</span>
+      <span class="key">app:</span> <span class="val">tomcat-app</span>
+  <span class="key">template:</span>
+    <span class="key">metadata:</span>
+      <span class="key">labels:</span>
+        <span class="key">app:</span> <span class="val">tomcat-app</span>
+    <span class="key">spec:</span>
+      <span class="key">serviceAccountName:</span> <span class="val">tomcat-app-sa</span>      <span class="comment"># dedicated SA (§05)</span>
+      <span class="key">automountServiceAccountToken:</span> <span class="danger-val">false</span>  <span class="comment"># belt + suspenders</span>
+
+      <span class="comment"># ── Pod-level security context (§07) ──</span>
+      <span class="key">securityContext:</span>
+        <span class="key">runAsNonRoot:</span> <span class="val">true</span>
+        <span class="key">runAsUser:</span> <span class="val">10001</span>
+        <span class="key">runAsGroup:</span> <span class="val">10001</span>
+        <span class="key">fsGroup:</span> <span class="val">10001</span>
+        <span class="key">seccompProfile:</span>
+          <span class="key">type:</span> <span class="val">RuntimeDefault</span>
+
+      <span class="key">containers:</span>
+      - <span class="key">name:</span> <span class="val">tomcat</span>
+        <span class="comment"># Digest-pinned image (§10)</span>
+        <span class="key">image:</span> <span class="val">registry.example.com/myapp@sha256:7f8e9d...</span>
+        <span class="key">ports:</span>
+        - <span class="key">containerPort:</span> <span class="val">8080</span>
+
+        <span class="comment"># ── Container-level security context ──</span>
+        <span class="key">securityContext:</span>
+          <span class="key">allowPrivilegeEscalation:</span> <span class="danger-val">false</span>
+          <span class="key">readOnlyRootFilesystem:</span> <span class="val">true</span>
+          <span class="key">capabilities:</span>
+            <span class="key">drop:</span> [<span class="str">"ALL"</span>]
+
+        <span class="comment"># ── Resource limits (prevent crypto mining) ──</span>
+        <span class="key">resources:</span>
+          <span class="key">requests:</span>
+            <span class="key">cpu:</span> <span class="str">"250m"</span>
+            <span class="key">memory:</span> <span class="str">"512Mi"</span>
+          <span class="key">limits:</span>
+            <span class="key">cpu:</span> <span class="str">"1"</span>
+            <span class="key">memory:</span> <span class="str">"1Gi"</span>
+
+        <span class="comment"># ── Mount secrets as files, NOT env vars (§09) ──</span>
+        <span class="key">volumeMounts:</span>
+        - <span class="key">name:</span> <span class="val">db-creds</span>
+          <span class="key">mountPath:</span> <span class="val">/etc/secrets/db</span>
+          <span class="key">readOnly:</span> <span class="val">true</span>
+        <span class="comment"># Tomcat needs writable dirs for work, temp, logs</span>
+        - <span class="key">name:</span> <span class="val">tomcat-work</span>
+          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/work</span>
+        - <span class="key">name:</span> <span class="val">tomcat-temp</span>
+          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/temp</span>
+        - <span class="key">name:</span> <span class="val">tomcat-logs</span>
+          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/logs</span>
+
+        <span class="key">readinessProbe:</span>
+          <span class="key">httpGet:</span>
+            <span class="key">path:</span> <span class="val">/</span>
+            <span class="key">port:</span> <span class="val">8080</span>
+          <span class="key">initialDelaySeconds:</span> <span class="val">15</span>
+          <span class="key">periodSeconds:</span> <span class="val">5</span>
+        <span class="key">livenessProbe:</span>
+          <span class="key">httpGet:</span>
+            <span class="key">path:</span> <span class="val">/</span>
+            <span class="key">port:</span> <span class="val">8080</span>
+          <span class="key">initialDelaySeconds:</span> <span class="val">30</span>
+          <span class="key">periodSeconds:</span> <span class="val">10</span>
+
+      <span class="key">volumes:</span>
+      - <span class="key">name:</span> <span class="val">db-creds</span>
+        <span class="key">secret:</span>
+          <span class="key">secretName:</span> <span class="val">tomcat-db-creds</span>
+      - <span class="key">name:</span> <span class="val">tomcat-work</span>
+        <span class="key">emptyDir:</span> {}
+      - <span class="key">name:</span> <span class="val">tomcat-temp</span>
+        <span class="key">emptyDir:</span> {}
+      - <span class="key">name:</span> <span class="val">tomcat-logs</span>
+        <span class="key">emptyDir:</span> {}               <span class="comment"># ephemeral, non-persistent</span></pre>
+</div>
+
+<h3>Fix 5 — Apply Network Policies (§08)</h3>
+<p>Start with default-deny, then whitelist only the traffic paths the application actually needs.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-default-deny.yaml</div>
+<pre><span class="comment"># Deny all ingress AND egress in the namespace</span>
+<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">default-deny-all</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">podSelector:</span> {}
+  <span class="key">policyTypes:</span>
+  - <span class="val">Ingress</span>
+  - <span class="val">Egress</span></pre>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-allow-ingress.yaml</div>
+<pre><span class="comment"># Allow traffic from the ingress controller only</span>
+<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">allow-ingress-to-tomcat</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">podSelector:</span>
+    <span class="key">matchLabels:</span>
+      <span class="key">app:</span> <span class="val">tomcat-app</span>
+  <span class="key">policyTypes:</span> [<span class="val">Ingress</span>]
+  <span class="key">ingress:</span>
+  - <span class="key">from:</span>
+    - <span class="key">namespaceSelector:</span>
+        <span class="key">matchLabels:</span>
+          <span class="key">kubernetes.io/metadata.name:</span> <span class="val">ingress-nginx</span>
+    <span class="key">ports:</span>
+    - <span class="key">port:</span> <span class="val">8080</span>
+      <span class="key">protocol:</span> <span class="val">TCP</span></pre>
+</div>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-allow-egress.yaml</div>
+<pre><span class="comment"># Allow egress only to the database and DNS</span>
+<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">allow-tomcat-egress</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+<span class="key">spec:</span>
+  <span class="key">podSelector:</span>
+    <span class="key">matchLabels:</span>
+      <span class="key">app:</span> <span class="val">tomcat-app</span>
+  <span class="key">policyTypes:</span> [<span class="val">Egress</span>]
+  <span class="key">egress:</span>
+  <span class="comment"># DNS resolution (kube-dns)</span>
+  - <span class="key">to:</span>
+    - <span class="key">namespaceSelector:</span>
+        <span class="key">matchLabels:</span>
+          <span class="key">kubernetes.io/metadata.name:</span> <span class="val">kube-system</span>
+    <span class="key">ports:</span>
+    - <span class="key">port:</span> <span class="val">53</span>
+      <span class="key">protocol:</span> <span class="val">UDP</span>
+    - <span class="key">port:</span> <span class="val">53</span>
+      <span class="key">protocol:</span> <span class="val">TCP</span>
+  <span class="comment"># Database (example: RDS on a specific CIDR)</span>
+  - <span class="key">to:</span>
+    - <span class="key">ipBlock:</span>
+        <span class="key">cidr:</span> <span class="val">10.0.50.0/24</span>     <span class="comment"># DB subnet</span>
+    <span class="key">ports:</span>
+    - <span class="key">port:</span> <span class="val">5432</span>
+      <span class="key">protocol:</span> <span class="val">TCP</span>          <span class="comment"># PostgreSQL</span></pre>
+</div>
+
+<h3>Fix 6 — Enable PSA Enforcement (§07)</h3>
+<p>Label the namespace so Kubernetes rejects any pod that doesn't meet the <strong>restricted</strong> security profile.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>namespace-hardened.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
+<span class="key">kind:</span> <span class="val">Namespace</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">labels:</span>
+    <span class="key">team:</span> <span class="val">backend</span>
+    <span class="comment"># Pod Security Admission labels</span>
+    <span class="key">pod-security.kubernetes.io/enforce:</span> <span class="val">restricted</span>
+    <span class="key">pod-security.kubernetes.io/enforce-version:</span> <span class="val">latest</span>
+    <span class="key">pod-security.kubernetes.io/warn:</span> <span class="val">restricted</span>
+    <span class="key">pod-security.kubernetes.io/audit:</span> <span class="val">restricted</span></pre>
+</div>
+
+<h3>Fix 7 — Add TLS to the Ingress (§12)</h3>
+<p>Terminate TLS at the Ingress layer. Use cert-manager to automate certificate provisioning.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>ingress-tls.yaml</div>
+<pre><span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
+<span class="key">kind:</span> <span class="val">Ingress</span>
+<span class="key">metadata:</span>
+  <span class="key">name:</span> <span class="val">tomcat-app</span>
+  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
+  <span class="key">annotations:</span>
+    <span class="key">nginx.ingress.kubernetes.io/ssl-redirect:</span> <span class="str">"true"</span>
+    <span class="key">nginx.ingress.kubernetes.io/force-ssl-redirect:</span> <span class="str">"true"</span>
+    <span class="key">cert-manager.io/cluster-issuer:</span> <span class="val">letsencrypt-prod</span>
+<span class="key">spec:</span>
+  <span class="key">ingressClassName:</span> <span class="val">nginx</span>
+  <span class="key">tls:</span>
+  - <span class="key">hosts:</span>
+    - <span class="val">myapp.example.com</span>
+    <span class="key">secretName:</span> <span class="val">myapp-tls-cert</span>
+  <span class="key">rules:</span>
+  - <span class="key">host:</span> <span class="val">myapp.example.com</span>
+    <span class="key">http:</span>
+      <span class="key">paths:</span>
+      - <span class="key">path:</span> <span class="val">/</span>
+        <span class="key">pathType:</span> <span class="val">Prefix</span>
+        <span class="key">backend:</span>
+          <span class="key">service:</span>
+            <span class="key">name:</span> <span class="val">tomcat-app</span>
+            <span class="key">port:</span>
+              <span class="key">number:</span> <span class="val">80</span></pre>
+</div>
+
+<h3>Verification — Audit Your Work</h3>
+<p>Run these checks to confirm the hardening is in place.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — security verification</div>
+<pre><span class="comment"># ① Verify pod is running as non-root</span>
+<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- id
+uid=10001 gid=10001 groups=10001
+
+<span class="comment"># ② Verify read-only root filesystem</span>
+<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- touch /test
+touch: /test: Read-only file system   <span class="comment"># ✓ expected</span>
+
+<span class="comment"># ③ Verify SA token is NOT mounted</span>
+<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- \
+    ls /var/run/secrets/kubernetes.io/serviceaccount 2>&amp;1
+ls: cannot access '...': No such file or directory   <span class="comment"># ✓ expected</span>
+
+<span class="comment"># ④ Verify secrets are mounted as files</span>
+<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- \
+    ls /etc/secrets/db/
+db.password  db.username
+
+<span class="comment"># ⑤ Verify NetworkPolicy is blocking lateral movement</span>
+<span class="val">$</span> kubectl run probe --rm -it -n tomcat-app --image=busybox -- \
+    wget -qO- --timeout=3 http://some-other-svc.other-ns.svc:8080
+wget: download timed out   <span class="comment"># ✓ blocked by default-deny</span>
+
+<span class="comment"># ⑥ Run kube-bench for CIS compliance</span>
+<span class="val">$</span> kubectl apply -f https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
+<span class="val">$</span> kubectl logs job/kube-bench</pre>
+</div>
+
+<h3>Before &amp; After Comparison</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Attack Vector</th><th style="color:var(--red)">Before (§15)</th><th style="color:var(--green)">After (§16)</th></tr>
+  <tr>
+    <td>Container runs as</td>
+    <td><code>root (UID 0)</code></td>
+    <td><code>UID 10001 (non-root)</code></td>
+  </tr>
+  <tr>
+    <td>Privilege escalation</td>
+    <td>Allowed (default)</td>
+    <td>Blocked (<code>allowPrivilegeEscalation: false</code>)</td>
+  </tr>
+  <tr>
+    <td>Linux capabilities</td>
+    <td>Full default set</td>
+    <td>All dropped (<code>drop: ["ALL"]</code>)</td>
+  </tr>
+  <tr>
+    <td>Root filesystem</td>
+    <td>Writable</td>
+    <td>Read-only (<code>readOnlyRootFilesystem: true</code>)</td>
+  </tr>
+  <tr>
+    <td>Database password</td>
+    <td>Env var in clear text</td>
+    <td>K8s Secret mounted as file</td>
+  </tr>
+  <tr>
+    <td>SA token</td>
+    <td>Auto-mounted (default SA)</td>
+    <td>Not mounted, dedicated SA</td>
+  </tr>
+  <tr>
+    <td>Image reference</td>
+    <td>Mutable tag (<code>:v1.0.0</code>)</td>
+    <td>Digest-pinned (<code>@sha256:...</code>)</td>
+  </tr>
+  <tr>
+    <td>Network access</td>
+    <td>Flat — reach everything</td>
+    <td>Default-deny, ingress + DB only</td>
+  </tr>
+  <tr>
+    <td>Resource limits</td>
+    <td>None (unbounded)</td>
+    <td>CPU + memory bounded</td>
+  </tr>
+  <tr>
+    <td>TLS</td>
+    <td>Plain HTTP</td>
+    <td>TLS termination at Ingress</td>
+  </tr>
+  <tr>
+    <td>Seccomp</td>
+    <td>Unconfined</td>
+    <td>RuntimeDefault profile</td>
+  </tr>
+  <tr>
+    <td>PSA enforcement</td>
+    <td>None</td>
+    <td>Restricted (namespace-level)</td>
+  </tr>
+</table>
+</div>
+
+<div class="callout tip" style="margin-top:28px">
+  <span class="icon">✓</span>
+  <span class="callout-text"><strong>Next steps for production:</strong> Integrate an external secrets manager (Vault, AWS Secrets Manager) via the Secrets Store CSI Driver. Add Falco or Tetragon for runtime detection. Sign your images with cosign and enforce signature verification via a Kyverno <code>ClusterPolicy</code>. Set up audit logging alerts for any <code>exec</code> into pods in this namespace.</span>
+</div>
+</section>
+
+</main>
+</div>
+
+</body>
+</html>
