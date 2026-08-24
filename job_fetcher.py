@@ -2,6 +2,7 @@ import os
 import re
 import time
 import json
+import argparse
 import urllib.parse
 from datetime import datetime, timezone
 import requests
@@ -42,11 +43,13 @@ HEADERS = {
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "teamblind_cache.json")
 FAILED_FILE = os.path.join(BASE_DIR, "teamblind_failed.json")
+EXCLUDED_FILE = os.path.join(BASE_DIR, "teamblind_permanently_excluded.json")
 OUTPUT_FILE = os.path.join(BASE_DIR, "index.html")
 ARCHIVE_DIR = os.path.join(BASE_DIR, "archive")
 ARCHIVE_UI_LIMIT = 7
 COMPANY_CACHE = {}
 FAILED_ORGS = {}
+EXCLUDED_ORGS = {}
 
 
 def log_audit(category: str, message: str):
@@ -56,7 +59,7 @@ def log_audit(category: str, message: str):
 
 
 def load_cache():
-    """Loads persistent cache and failed-org list from disk."""
+    """Loads persistent cache, failed-org list, and permanently excluded orgs."""
     global COMPANY_CACHE, FAILED_ORGS
     if os.path.exists(CACHE_FILE):
         try:
@@ -65,11 +68,13 @@ def load_cache():
             log_audit("CACHE LOAD", f"Loaded {len(COMPANY_CACHE)} cached company entries.")
         except Exception as e:
             log_audit("CACHE WARN", f"Failed reading cache file: {e}")
+    _load_excluded_orgs()
     _load_failed_orgs()
+    _drop_excluded_from_failed()
 
 
 def save_cache():
-    """Saves cache and failed-org list, dropping leftover Levels.fyi keys."""
+    """Saves cache, failed-org list, and excluded-org list, dropping leftover Levels.fyi keys."""
     try:
         slim = {}
         for key, value in COMPANY_CACHE.items():
@@ -83,6 +88,7 @@ def save_cache():
     except Exception as e:
         log_audit("CACHE ERROR", f"Failed saving cache file: {e}")
     _save_failed_orgs()
+    _save_excluded_orgs()
 
 
 def _load_failed_orgs():
@@ -103,6 +109,8 @@ def _load_failed_orgs():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     seeded = {}
     for key, value in COMPANY_CACHE.items():
+        if _is_permanently_excluded(key):
+            continue
         score = value if isinstance(value, str) else (value or {}).get("blind_score")
         if _is_good_blind_score(score):
             continue
@@ -127,7 +135,66 @@ def _save_failed_orgs():
         log_audit("FAILED ERROR", f"Failed saving {FAILED_FILE}: {e}")
 
 
+def _load_excluded_orgs():
+    """Loads teamblind_permanently_excluded.json if present."""
+    global EXCLUDED_ORGS
+    if not os.path.exists(EXCLUDED_FILE):
+        EXCLUDED_ORGS = {}
+        return
+    try:
+        with open(EXCLUDED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        EXCLUDED_ORGS = data if isinstance(data, dict) else {}
+        log_audit("EXCLUDED LOAD", f"Loaded {len(EXCLUDED_ORGS)} permanently excluded orgs.")
+    except Exception as e:
+        log_audit("EXCLUDED WARN", f"Failed reading {EXCLUDED_FILE}: {e}")
+        EXCLUDED_ORGS = {}
+
+
+def _save_excluded_orgs():
+    """Writes permanently excluded orgs. Creates the file only after the first exclusion."""
+    if not EXCLUDED_ORGS and not os.path.exists(EXCLUDED_FILE):
+        return
+    try:
+        with open(EXCLUDED_FILE, "w", encoding="utf-8") as f:
+            json.dump(EXCLUDED_ORGS, f, indent=2, ensure_ascii=False, sort_keys=True)
+        log_audit("EXCLUDED SAVE", f"Saved {len(EXCLUDED_ORGS)} excluded orgs to {EXCLUDED_FILE}")
+    except Exception as e:
+        log_audit("EXCLUDED ERROR", f"Failed saving {EXCLUDED_FILE}: {e}")
+
+
+def _is_permanently_excluded(norm_key: str) -> bool:
+    return norm_key in EXCLUDED_ORGS
+
+
+def _drop_excluded_from_failed():
+    """Keeps failed.json from resurrecting permanently excluded orgs."""
+    removed = 0
+    for key in list(FAILED_ORGS):
+        if key in EXCLUDED_ORGS:
+            FAILED_ORGS.pop(key, None)
+            removed += 1
+    if removed:
+        log_audit("FAILED PRUNE", f"Removed {removed} permanently excluded orgs from failed list.")
+
+
+def _mark_permanent_exclusion(company_name: str, norm_key: str):
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    prev_failed = FAILED_ORGS.pop(norm_key, None) or {}
+    prev_excluded = EXCLUDED_ORGS.get(norm_key) or {}
+    fail_count = int(prev_failed.get("fail_count") or prev_excluded.get("fail_count") or 0) + 1
+    display = (company_name or prev_failed.get("company") or prev_excluded.get("company") or norm_key)
+    EXCLUDED_ORGS[norm_key] = {
+        "company": str(display).strip(),
+        "fail_count": fail_count,
+        "last_failed_at": now,
+        "excluded_at": now,
+    }
+
+
 def _mark_blind_failure(company_name: str, norm_key: str):
+    if _is_permanently_excluded(norm_key):
+        return
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     prev = FAILED_ORGS.get(norm_key) or {}
     FAILED_ORGS[norm_key] = {
@@ -281,6 +348,11 @@ def get_company_intelligence(company_name: str) -> dict:
         prev_score = cached
     elif isinstance(cached, dict):
         prev_score = cached.get("blind_score")
+
+    if _is_permanently_excluded(norm_key):
+        score = prev_score if _is_good_blind_score(prev_score) else "N/A"
+        log_audit("EXCLUDED SKIP", f"Skipping TeamBlind for excluded org '{company_name}'")
+        return {"blind_score": score}
 
     if _is_good_blind_score(prev_score):
         log_audit("CACHE HIT", f"Using cached Blind score for '{company_name}'")
@@ -1326,5 +1398,78 @@ def main():
     save_cache()
 
 
+def retry_failed_orgs(limit=None):
+    """Retry TeamBlind for failed orgs. Success updates cache; failure permanently excludes."""
+    load_cache()
+    pending = list(FAILED_ORGS.items())
+    if isinstance(limit, int) and limit >= 0:
+        pending = pending[:limit]
+
+    total = len(pending)
+    recovered = 0
+    excluded = 0
+    skipped = 0
+    log_audit("RETRY INIT", f"Retrying TeamBlind for {total} failed org(s).")
+    if not pending:
+        return
+
+    for index, (norm_key, entry) in enumerate(pending, start=1):
+        if _is_permanently_excluded(norm_key):
+            FAILED_ORGS.pop(norm_key, None)
+            skipped += 1
+            log_audit("EXCLUDED SKIP", f"[{index}/{total}] Already excluded '{norm_key}'")
+            save_cache()
+            continue
+
+        company_name = ""
+        if isinstance(entry, dict):
+            company_name = (entry.get("company") or "").strip()
+        if not company_name:
+            company_name = str(norm_key)
+
+        log_audit("RETRY FETCH", f"[{index}/{total}] Querying TeamBlind for '{company_name}'")
+        fresh_score = get_teamblind_score(company_name)
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if _is_good_blind_score(fresh_score):
+            COMPANY_CACHE[norm_key] = {"blind_score": fresh_score, "fetched_at": now}
+            _clear_blind_failure(norm_key)
+            recovered += 1
+            log_audit("RETRY HIT", f"Recovered '{company_name}' -> {fresh_score}")
+        else:
+            COMPANY_CACHE[norm_key] = {"blind_score": "N/A", "fetched_at": now}
+            _mark_permanent_exclusion(company_name, norm_key)
+            excluded += 1
+            log_audit("RETRY EXCLUDE", f"Permanently excluded '{company_name}'")
+
+        save_cache()
+        if index < total:
+            time.sleep(1.0)
+
+    log_audit(
+        "RETRY DONE",
+        f"Recovered {recovered}, excluded {excluded}, skipped {skipped}, remaining failed {len(FAILED_ORGS)}.",
+    )
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Daily security job collector")
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Retry TeamBlind scores for orgs in teamblind_failed.json",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Process only the first N failed orgs (retry-failed mode)",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    if args.retry_failed:
+        retry_failed_orgs(limit=args.limit)
+    else:
+        main()
