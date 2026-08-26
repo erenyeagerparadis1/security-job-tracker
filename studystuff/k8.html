@@ -411,6 +411,58 @@
     font-size: 15px;
   }
 
+  /* ── INTERACTIVE CLUSTER DIAGRAM ── */
+  .cluster-diagram-wrap {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 20px 0 24px;
+    overflow: hidden;
+  }
+  .cluster-diagram-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+    flex-wrap: wrap;
+  }
+  .cluster-diagram-toolbar span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .tgl-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tgl-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .tgl-btn.active-netpol { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+  .tgl-btn.active-mtls   { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+  .tgl-btn.active-attack { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+  .cluster-diagram-wrap svg { display: block; width: 100%; }
+
+  /* ── NETSEG VISUAL ── */
+  .netseg-wrap {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 20px 0 24px;
+    overflow: hidden;
+  }
+  .netseg-wrap svg { display: block; width: 100%; }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 800px) {
     .container { flex-direction: column; padding: 0 20px; }
@@ -453,8 +505,6 @@
   <a href="#s12"><span class="num">12</span> Service Mesh &amp; mTLS</a>
   <a href="#s13"><span class="num">13</span> Attack Surface Map</a>
   <a href="#s14"><span class="num">14</span> Hardening Checklist</a>
-  <a href="#s15"><span class="num">15</span> Hands-On: Deploy a Tomcat App</a>
-  <a href="#s16"><span class="num">16</span> Hands-On: Secure the Deployment</a>
 </nav>
 
 <!-- ═══════════════════ MAIN ═══════════════════ -->
@@ -491,26 +541,371 @@
 <h2><span class="sec-num">02</span> Architecture Deep-Dive</h2>
 <p>A cluster has two planes: the <strong>control plane</strong> (the brain) and <strong>worker nodes</strong> (the muscle). Understanding what each component does is essential for knowing what to protect.</p>
 
-<div class="diagram">
-  <div class="diagram-title">Cluster Architecture</div>
-
-  <div class="arch-label">Control Plane</div>
-  <div class="arch-row">
-    <div class="arch-box control">kube-apiserver<br><small style="font-size:10px;opacity:.7">all requests enter here</small></div>
-    <div class="arch-box control">etcd<br><small style="font-size:10px;opacity:.7">cluster state store</small></div>
-    <div class="arch-box control">kube-scheduler<br><small style="font-size:10px;opacity:.7">places pods on nodes</small></div>
-    <div class="arch-box control">controller-manager<br><small style="font-size:10px;opacity:.7">reconciliation loops</small></div>
+<div class="cluster-diagram-wrap">
+  <div class="cluster-diagram-toolbar">
+    <span>Overlay:</span>
+    <button class="tgl-btn" id="btn-netpol" onclick="toggleLayer('netpol')">NetworkPolicy</button>
+    <button class="tgl-btn" id="btn-mtls"   onclick="toggleLayer('mtls')">mTLS</button>
+    <button class="tgl-btn" id="btn-attack" onclick="toggleLayer('attack')">Attack paths</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">click to toggle layers</span>
   </div>
 
-  <div class="arch-arrow">↕ &nbsp;TLS + AuthN/AuthZ&nbsp; ↕</div>
+  <svg id="cluster-svg" viewBox="0 0 860 620" xmlns="http://www.w3.org/2000/svg" aria-label="Interactive Kubernetes cluster architecture with network segmentation overlays">
+  <defs>
+    <marker id="ca" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="ga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="ra" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#f85149" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="pa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#bc8cff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="oa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#d29922" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      @keyframes flowdash { to { stroke-dashoffset: -20; } }
+      .flow-anim { stroke-dasharray: 7 4; animation: flowdash 1.2s linear infinite; }
+      .flow-anim2 { stroke-dasharray: 7 4; animation: flowdash 1.8s linear infinite; }
+      .flow-anim3 { stroke-dasharray: 7 4; animation: flowdash 2.4s linear infinite; }
+      .lyr { transition: opacity 0.3s; }
+    </style>
+  </defs>
 
-  <div class="arch-label">Worker Nodes (× N)</div>
-  <div class="arch-row">
-    <div class="arch-box worker">kubelet<br><small style="font-size:10px;opacity:.7">node agent</small></div>
-    <div class="arch-box worker">kube-proxy<br><small style="font-size:10px;opacity:.7">service networking</small></div>
-    <div class="arch-box worker">container runtime<br><small style="font-size:10px;opacity:.7">containerd / CRI-O</small></div>
-  </div>
+  <!-- ══════════ BACKGROUND ZONES ══════════ -->
+
+  <!-- Internet zone -->
+  <rect x="10" y="10" width="840" height="60" rx="10" fill="#f8514910" stroke="#f85149" stroke-width="1" stroke-dasharray="5 3"/>
+  <text x="26" y="34" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" opacity="0.9">INTERNET</text>
+  <!-- User icon -->
+  <circle cx="780" cy="30" r="10" fill="none" stroke="#f85149" stroke-width="1"/>
+  <text x="780" y="34" text-anchor="middle" font-size="11" fill="#f85149">👤</text>
+  <text x="780" y="55" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">user</text>
+
+  <!-- Control Plane zone -->
+  <rect x="10" y="80" width="840" height="140" rx="10" fill="#bc8cff0d" stroke="#bc8cff" stroke-width="1.5"/>
+  <text x="26" y="103" font-family="IBM Plex Mono,monospace" font-size="11" fill="#bc8cff" opacity="0.9">CONTROL PLANE  —  dedicated servers, never runs workloads</text>
+
+  <!-- Node 1 zone -->
+  <rect x="10" y="234" width="400" height="270" rx="10" fill="#3fb95008" stroke="#3fb950" stroke-width="1.2"/>
+  <text x="26" y="256" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950">NODE 1  —  worker server</text>
+
+  <!-- Node 2 zone -->
+  <rect x="428" y="234" width="422" height="270" rx="10" fill="#3fb95008" stroke="#3fb950" stroke-width="1.2"/>
+  <text x="444" y="256" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950">NODE 2  —  worker server</text>
+
+  <!-- Shared Linux kernel label node1 -->
+  <rect x="20" y="478" width="380" height="20" rx="4" fill="#21262d" stroke="#30363d" stroke-width="0.5"/>
+  <text x="210" y="492" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">shared Linux kernel (namespaces isolate pods above)</text>
+
+  <!-- Shared Linux kernel label node2 -->
+  <rect x="438" y="478" width="402" height="20" rx="4" fill="#21262d" stroke="#30363d" stroke-width="0.5"/>
+  <text x="639" y="492" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">shared Linux kernel</text>
+
+  <!-- ══════════ CONTROL PLANE COMPONENTS ══════════ -->
+
+  <!-- Ingress / LB -->
+  <rect x="30" y="112" width="120" height="90" rx="8" fill="#bc8cff22" stroke="#bc8cff" stroke-width="1"/>
+  <text x="90" y="138" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#bc8cff" font-weight="600">Ingress</text>
+  <text x="90" y="156" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Controller</text>
+  <text x="90" y="174" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">:443 / :80</text>
+  <text x="90" y="192" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">TLS termination</text>
+
+  <!-- API Server -->
+  <rect x="172" y="112" width="140" height="90" rx="8" fill="#bc8cff22" stroke="#bc8cff" stroke-width="1.5"/>
+  <text x="242" y="138" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#bc8cff" font-weight="600">kube-apiserver</text>
+  <text x="242" y="156" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">AuthN → AuthZ</text>
+  <text x="242" y="172" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">→ Admission</text>
+  <text x="242" y="190" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">:6443 mTLS</text>
+
+  <!-- etcd -->
+  <rect x="334" y="112" width="110" height="90" rx="8" fill="#f8514922" stroke="#f85149" stroke-width="1.5"/>
+  <text x="389" y="138" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#f85149" font-weight="600">etcd</text>
+  <text x="389" y="156" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">cluster state</text>
+  <text x="389" y="172" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">crown jewel</text>
+  <text x="389" y="190" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">:2379 TLS only</text>
+
+  <!-- Scheduler -->
+  <rect x="466" y="112" width="130" height="90" rx="8" fill="#bc8cff22" stroke="#bc8cff" stroke-width="1"/>
+  <text x="531" y="138" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#bc8cff" font-weight="600">scheduler</text>
+  <text x="531" y="156" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">pod placement</text>
+  <text x="531" y="174" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">watches etcd</text>
+
+  <!-- Controller Manager -->
+  <rect x="618" y="112" width="140" height="90" rx="8" fill="#bc8cff22" stroke="#bc8cff" stroke-width="1"/>
+  <text x="688" y="134" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#bc8cff" font-weight="600">controller</text>
+  <text x="688" y="150" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#bc8cff" font-weight="600">manager</text>
+  <text x="688" y="168" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">reconcile loops</text>
+  <text x="688" y="186" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Deployment/RS/SA</text>
+
+  <!-- ══════════ NODE 1 COMPONENTS ══════════ -->
+
+  <!-- kubelet node1 -->
+  <rect x="24" y="266" width="140" height="56" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="94" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#d29922" font-weight="600">kubelet</text>
+  <text x="94" y="308" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">node agent :10250</text>
+
+  <!-- kube-proxy node1 -->
+  <rect x="176" y="266" width="114" height="56" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="233" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#d29922" font-weight="600">kube-proxy</text>
+  <text x="233" y="308" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">iptables / IPVS</text>
+
+  <!-- containerd node1 -->
+  <rect x="302" y="266" width="98" height="56" rx="6" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+  <text x="351" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#8b949e" font-weight="600">containerd</text>
+  <text x="351" y="308" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681">CRI runtime</text>
+
+  <!-- ── Namespace: payments (node1) ── -->
+  <rect x="24" y="336" width="180" height="132" rx="8" fill="#58a6ff08" stroke="#58a6ff" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="38" y="354" font-family="IBM Plex Mono,monospace" font-size="10" fill="#58a6ff">ns: payments</text>
+
+  <!-- Pod: frontend -->
+  <rect x="34" y="362" width="76" height="88" rx="6" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+  <text x="72" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#3fb950" font-weight="600">Pod</text>
+  <text x="72" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">frontend</text>
+  <text x="72" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:3000</text>
+  <text x="72" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">10.0.1.4</text>
+
+  <!-- Pod: api -->
+  <rect x="120" y="362" width="74" height="88" rx="6" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+  <text x="157" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#3fb950" font-weight="600">Pod</text>
+  <text x="157" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">api</text>
+  <text x="157" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:8080</text>
+  <text x="157" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">10.0.1.5</text>
+
+  <!-- ── Namespace: monitoring (node1) ── -->
+  <rect x="218" y="336" width="172" height="132" rx="8" fill="#d2992208" stroke="#d29922" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="232" y="354" font-family="IBM Plex Mono,monospace" font-size="10" fill="#d29922">ns: monitoring</text>
+
+  <!-- Pod: prometheus -->
+  <rect x="228" y="362" width="76" height="88" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="266" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#d29922" font-weight="600">Pod</text>
+  <text x="266" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">prometheus</text>
+  <text x="266" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:9090</text>
+  <text x="266" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">10.0.1.8</text>
+
+  <!-- Pod: falco -->
+  <rect x="314" y="362" width="66" height="88" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="347" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#d29922" font-weight="600">Pod</text>
+  <text x="347" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">falco</text>
+  <text x="347" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">runtime</text>
+  <text x="347" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">detection</text>
+
+  <!-- ══════════ NODE 2 COMPONENTS ══════════ -->
+
+  <!-- kubelet node2 -->
+  <rect x="442" y="266" width="140" height="56" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="512" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#d29922" font-weight="600">kubelet</text>
+  <text x="512" y="308" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">node agent :10250</text>
+
+  <!-- kube-proxy node2 -->
+  <rect x="596" y="266" width="114" height="56" rx="6" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+  <text x="653" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#d29922" font-weight="600">kube-proxy</text>
+  <text x="653" y="308" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">iptables / IPVS</text>
+
+  <!-- ── Namespace: payments cont (node2) ── -->
+  <rect x="442" y="336" width="170" height="132" rx="8" fill="#58a6ff08" stroke="#58a6ff" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="456" y="354" font-family="IBM Plex Mono,monospace" font-size="10" fill="#58a6ff">ns: payments</text>
+
+  <!-- Pod: api replica -->
+  <rect x="452" y="362" width="74" height="88" rx="6" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+  <text x="489" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#3fb950" font-weight="600">Pod</text>
+  <text x="489" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">api</text>
+  <text x="489" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:8080</text>
+  <text x="489" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">10.0.2.4</text>
+
+  <!-- Pod: db -->
+  <rect x="536" y="362" width="66" height="88" rx="6" fill="#f8514922" stroke="#f85149" stroke-width="1"/>
+  <text x="569" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149" font-weight="600">Pod</text>
+  <text x="569" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">postgres</text>
+  <text x="569" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:5432</text>
+  <text x="569" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">10.0.2.5</text>
+
+  <!-- ── Namespace: kube-system (node2) ── -->
+  <rect x="626" y="336" width="190" height="132" rx="8" fill="#f8514908" stroke="#f85149" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="640" y="354" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">ns: kube-system</text>
+
+  <!-- Pod: coredns -->
+  <rect x="636" y="362" width="76" height="88" rx="6" fill="#f8514922" stroke="#f85149" stroke-width="1"/>
+  <text x="674" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149" font-weight="600">Pod</text>
+  <text x="674" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">coredns</text>
+  <text x="674" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">:53</text>
+  <text x="674" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">DNS svc</text>
+
+  <!-- Pod: cni -->
+  <rect x="724" y="362" width="80" height="88" rx="6" fill="#f8514922" stroke="#f85149" stroke-width="1"/>
+  <text x="764" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149" font-weight="600">Pod</text>
+  <text x="764" y="400" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">cilium /</text>
+  <text x="764" y="416" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">calico</text>
+  <text x="764" y="432" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">CNI</text>
+
+  <!-- ══════════ LEGEND ══════════ -->
+  <rect x="10" y="514" width="840" height="96" rx="8" fill="#161b22" stroke="#30363d" stroke-width="0.5"/>
+  <text x="26" y="534" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6e7681" letter-spacing="1">LEGEND</text>
+
+  <!-- ns: payments -->
+  <rect x="26" y="544" width="12" height="12" rx="2" fill="#58a6ff08" stroke="#58a6ff" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="44" y="554" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">ns: payments (app workloads)</text>
+  <!-- ns: monitoring -->
+  <rect x="26" y="566" width="12" height="12" rx="2" fill="#d2992208" stroke="#d29922" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="44" y="576" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">ns: monitoring (observability)</text>
+  <!-- ns: kube-system -->
+  <rect x="26" y="588" width="12" height="12" rx="2" fill="#f8514908" stroke="#f85149" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="44" y="598" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">ns: kube-system (cluster internals)</text>
+
+  <!-- flow lines legend -->
+  <line x1="240" y1="550" x2="290" y2="550" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="296" y="554" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">TLS control traffic</text>
+  <line x1="240" y1="566" x2="290" y2="566" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="296" y="570" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">kubelet heartbeat</text>
+  <line x1="240" y1="582" x2="290" y2="582" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="3 2"/>
+  <text x="296" y="586" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">pod → API server (SA token)</text>
+  <line x1="240" y1="598" x2="290" y2="598" stroke="#f85149" stroke-width="2" stroke-dasharray="4 2" opacity="0.6"/>
+  <text x="296" y="602" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">attack path (toggle overlay)</text>
+
+  <!-- NetworkPolicy legend -->
+  <rect x="490" y="540" width="16" height="16" rx="3" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <text x="512" y="552" font-family="IBM Plex Mono,monospace" font-size="10" fill="#58a6ff">NetworkPolicy boundary</text>
+  <line x1="490" y1="574" x2="506" y2="574" stroke="#bc8cff" stroke-width="2.5"/>
+  <text x="512" y="578" font-family="IBM Plex Mono,monospace" font-size="10" fill="#bc8cff">mTLS encrypted channel</text>
+  <circle cx="498" cy="596" r="5" fill="none" stroke="#f85149" stroke-width="1.5"/>
+  <line x1="494" y1="592" x2="502" y2="600" stroke="#f85149" stroke-width="1.5"/>
+  <line x1="502" y1="592" x2="494" y2="600" stroke="#f85149" stroke-width="1.5"/>
+  <text x="512" y="600" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">blocked / attack vector</text>
+
+  <!-- ══════════ BASE TRAFFIC FLOWS (always visible) ══════════ -->
+
+  <!-- User → Ingress -->
+  <line class="flow-anim" x1="780" y1="56" x2="150" y2="112" stroke="#f85149" stroke-width="1.5" marker-end="url(#ra)"/>
+
+  <!-- Ingress → API server -->
+  <line class="flow-anim" x1="152" y1="157" x2="170" y2="157" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#ca)"/>
+
+  <!-- API server → etcd -->
+  <line class="flow-anim2" x1="312" y1="157" x2="332" y2="157" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#ca)"/>
+
+  <!-- API server → kubelet node1 (instruction) -->
+  <line class="flow-anim" x1="220" y1="202" x2="94" y2="266" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ga)"/>
+
+  <!-- API server → kubelet node2 (instruction) -->
+  <line class="flow-anim2" x1="264" y1="202" x2="512" y2="266" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ga)"/>
+
+  <!-- kubelet node1 → API server (heartbeat) -->
+  <line class="flow-anim3" x1="80" y1="266" x2="210" y2="202" stroke="#3fb950" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ga)"/>
+
+  <!-- kubelet node2 → API server (heartbeat) -->
+  <line class="flow-anim3" x1="500" y1="266" x2="275" y2="202" stroke="#3fb950" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ga)"/>
+
+  <!-- ══════════ LAYER: NetworkPolicy ══════════ -->
+  <g id="layer-netpol" class="lyr" style="opacity:0; pointer-events:none">
+    <!-- NS payments boundary node1 -->
+    <rect x="22" y="334" width="184" height="136" rx="10" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+    <text x="114" y="328" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#58a6ff" font-weight="600">default-deny ingress+egress</text>
+
+    <!-- Allowed: frontend → api (same ns) -->
+    <line x1="110" y1="406" x2="118" y2="406" stroke="#3fb950" stroke-width="2" marker-end="url(#ga)"/>
+    <text x="114" y="395" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#3fb950">✓ :8080</text>
+
+    <!-- NS payments boundary node2 -->
+    <rect x="440" y="334" width="174" height="136" rx="10" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+
+    <!-- Allowed: api → postgres (same ns) -->
+    <line x1="526" y1="406" x2="534" y2="406" stroke="#3fb950" stroke-width="2" marker-end="url(#ga)"/>
+    <text x="530" y="395" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#3fb950">✓ :5432</text>
+
+    <!-- Blocked: monitoring → payments cross-ns -->
+    <line x1="266" y1="362" x2="160" y2="430" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <circle cx="213" cy="396" r="8" fill="none" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="208" y1="391" x2="218" y2="401" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="218" y1="391" x2="208" y2="401" stroke="#f85149" stroke-width="1.5"/>
+    <text x="194" y="384" font-family="IBM Plex Mono,monospace" font-size="9" fill="#f85149">✗ cross-ns blocked</text>
+
+    <!-- Blocked: payments → kube-system cross-ns -->
+    <line x1="569" y1="362" x2="674" y2="390" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <circle cx="620" cy="376" r="8" fill="none" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="615" y1="371" x2="625" y2="381" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="625" y1="371" x2="615" y2="381" stroke="#f85149" stroke-width="1.5"/>
+    <text x="594" y="366" font-family="IBM Plex Mono,monospace" font-size="9" fill="#f85149">✗ blocked</text>
+
+    <!-- Egress: api pod → external blocked -->
+    <line x1="157" y1="362" x2="157" y2="260" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <circle cx="157" cy="256" r="8" fill="none" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="152" y1="251" x2="162" y2="261" stroke="#f85149" stroke-width="1.5"/>
+    <line x1="162" y1="251" x2="152" y2="261" stroke="#f85149" stroke-width="1.5"/>
+    <text x="166" y="244" font-family="IBM Plex Mono,monospace" font-size="9" fill="#f85149">✗ egress blocked</text>
+  </g>
+
+  <!-- ══════════ LAYER: mTLS ══════════ -->
+  <g id="layer-mtls" class="lyr" style="opacity:0; pointer-events:none">
+    <!-- mTLS label on api server channel -->
+    <rect x="160" y="140" width="172" height="34" rx="4" fill="#bc8cff22" stroke="#bc8cff" stroke-width="1"/>
+    <text x="246" y="153" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#bc8cff">mTLS :6443</text>
+    <text x="246" y="167" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">cert-based mutual auth</text>
+
+    <!-- mTLS frontend ↔ api -->
+    <line x1="110" y1="406" x2="120" y2="406" stroke="#bc8cff" stroke-width="3"/>
+    <text x="114" y="346" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#bc8cff">envoy sidecar</text>
+    <text x="114" y="358" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#bc8cff">mTLS tunnel</text>
+
+    <!-- mTLS api ↔ postgres (cross node) -->
+    <path d="M 531 406 Q 420 500 569 406" fill="none" stroke="#bc8cff" stroke-width="2.5" stroke-dasharray="6 3"/>
+    <text x="480" y="470" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#bc8cff">cross-node mTLS</text>
+
+    <!-- mTLS lock icons -->
+    <text x="70" y="376" text-anchor="middle" font-size="14">🔒</text>
+    <text x="156" y="376" text-anchor="middle" font-size="14">🔒</text>
+    <text x="488" y="376" text-anchor="middle" font-size="14">🔒</text>
+    <text x="568" y="376" text-anchor="middle" font-size="14">🔒</text>
+
+    <!-- Service mesh label -->
+    <rect x="60" y="500" width="260" height="22" rx="4" fill="#bc8cff11" stroke="#bc8cff" stroke-width="0.5"/>
+    <text x="190" y="515" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#bc8cff">Istio / Cilium — transparent to the app</text>
+  </g>
+
+  <!-- ══════════ LAYER: Attack paths ══════════ -->
+  <g id="layer-attack" class="lyr" style="opacity:0; pointer-events:none">
+    <!-- Attack 1: Internet → exposed kubelet -->
+    <path d="M 760 40 Q 760 280 512 280" fill="none" stroke="#f85149" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ra)"/>
+    <rect x="590" y="252" width="140" height="22" rx="4" fill="#f8514933" stroke="#f85149" stroke-width="1"/>
+    <text x="660" y="267" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">① open :10250 → RCE</text>
+
+    <!-- Attack 2: compromised frontend → SA token → API -->
+    <path d="M 72 362 Q 72 240 242 202" fill="none" stroke="#f85149" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ra)"/>
+    <rect x="30" y="240" width="160" height="22" rx="4" fill="#f8514933" stroke="#f85149" stroke-width="1"/>
+    <text x="110" y="255" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">② SA token → API abuse</text>
+
+    <!-- Attack 3: lateral movement -->
+    <path d="M 157 406 Q 300 506 452 406" fill="none" stroke="#f85149" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ra)"/>
+    <text x="304" y="502" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">③ flat network lateral move</text>
+
+    <!-- Attack 4: etcd direct access -->
+    <path d="M 760 40 Q 500 60 389 112" fill="none" stroke="#f85149" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#ra)"/>
+    <rect x="430" y="58" width="160" height="22" rx="4" fill="#f8514933" stroke="#f85149" stroke-width="1"/>
+    <text x="510" y="73" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">④ etcd :2379 exposed</text>
+
+    <!-- Attack labels -->
+    <rect x="10" y="500" width="420" height="90" rx="6" fill="#f8514910" stroke="#f85149" stroke-width="0.5"/>
+    <text x="20" y="518" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">ATTACK PATHS</text>
+    <text x="20" y="534" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">① Open kubelet API → exec into any pod on node</text>
+    <text x="20" y="550" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">② Over-permissive SA token → escalate to cluster-admin</text>
+    <text x="20" y="566" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">③ No NetworkPolicy → compromised pod reaches all pods</text>
+    <text x="20" y="582" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">④ etcd port open → bypasses all RBAC, reads all secrets</text>
+  </g>
+
+  </svg>
 </div>
+
+<script>
+var layers = { netpol: false, mtls: false, attack: false };
+function toggleLayer(name) {
+  layers[name] = !layers[name];
+  var el = document.getElementById('layer-' + name);
+  var btn = document.getElementById('btn-' + name);
+  if (layers[name]) {
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'auto';
+    btn.classList.add('active-' + name);
+  } else {
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    btn.classList.remove('active-' + name);
+  }
+}
+</script>
 
 <h3>Component Security Implications</h3>
 <div class="table-wrap">
@@ -850,6 +1245,160 @@
   <span class="icon">🔑</span>
   <span class="callout-text"><strong>CNI requirement:</strong> NetworkPolicies only work if your CNI plugin supports them. Calico, Cilium, and Weave do. The default AWS VPC CNI does not enforce them natively (use Calico addon). Always verify enforcement with a test.</span>
 </div>
+
+<h3>Visual: Before vs After Network Segmentation</h3>
+<p>The diagrams below show what the east-west traffic looks like in a cluster with no NetworkPolicies versus one with default-deny and explicit allow rules.</p>
+
+<div class="netseg-wrap">
+<svg viewBox="0 0 860 460" xmlns="http://www.w3.org/2000/svg" aria-label="Before and after comparison of network segmentation in a Kubernetes cluster">
+<defs>
+  <marker id="nsa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#f85149" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="nga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <style>
+    @keyframes nsdash { to { stroke-dashoffset: -18; } }
+    .ns-flow { stroke-dasharray: 6 4; animation: nsdash 1.2s linear infinite; }
+    .ns-flow2 { stroke-dasharray: 6 4; animation: nsdash 1.8s linear infinite; }
+  </style>
+</defs>
+
+<!-- ── LEFT: NO NetworkPolicy ── -->
+<text x="210" y="28" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="13" fill="#f85149" font-weight="600">BEFORE — No NetworkPolicy</text>
+<text x="210" y="46" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">flat network: every pod talks to every pod</text>
+
+<!-- Cluster box -->
+<rect x="20" y="58" width="380" height="360" rx="10" fill="#f8514908" stroke="#f85149" stroke-width="1.5" stroke-dasharray="5 3"/>
+
+<!-- Pods (no ns boundaries) -->
+<!-- frontend -->
+<rect x="50" y="100" width="80" height="70" rx="8" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+<text x="90" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950" font-weight="600">frontend</text>
+<text x="90" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.1.4</text>
+
+<!-- api -->
+<rect x="170" y="100" width="80" height="70" rx="8" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+<text x="210" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950" font-weight="600">api</text>
+<text x="210" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.1.5</text>
+
+<!-- postgres -->
+<rect x="290" y="100" width="90" height="70" rx="8" fill="#f8514922" stroke="#f85149" stroke-width="1"/>
+<text x="335" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" font-weight="600">postgres</text>
+<text x="335" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.2.5</text>
+
+<!-- prometheus -->
+<rect x="50" y="230" width="100" height="70" rx="8" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+<text x="100" y="258" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#d29922" font-weight="600">prometheus</text>
+<text x="100" y="276" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.1.8</text>
+
+<!-- attacker-pod (compromised) -->
+<rect x="250" y="230" width="120" height="70" rx="8" fill="#f8514944" stroke="#f85149" stroke-width="2"/>
+<text x="310" y="252" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" font-weight="600">☠ compromised</text>
+<text x="310" y="268" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" font-weight="600">pod</text>
+<text x="310" y="284" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">any namespace</text>
+
+<!-- ALL traffic arrows — red (unrestricted) -->
+<!-- frontend → api -->
+<line class="ns-flow" x1="130" y1="135" x2="168" y2="135" stroke="#f85149" stroke-width="1.5" marker-end="url(#nsa)"/>
+<!-- api → postgres -->
+<line class="ns-flow" x1="250" y1="135" x2="288" y2="135" stroke="#f85149" stroke-width="1.5" marker-end="url(#nsa)"/>
+<!-- compromised → postgres -->
+<line class="ns-flow2" x1="310" y1="230" x2="335" y2="172" stroke="#f85149" stroke-width="2" marker-end="url(#nsa)"/>
+<!-- compromised → api -->
+<line class="ns-flow2" x1="260" y1="248" x2="250" y2="165" stroke="#f85149" stroke-width="2" marker-end="url(#nsa)"/>
+<!-- prometheus → everything -->
+<line class="ns-flow" x1="150" y1="265" x2="295" y2="148" stroke="#f85149" stroke-width="1.5" stroke-dasharray="3 2" marker-end="url(#nsa)"/>
+<line class="ns-flow2" x1="100" y1="230" x2="90" y2="172" stroke="#f85149" stroke-width="1.5" stroke-dasharray="3 2" marker-end="url(#nsa)"/>
+<!-- compromised → prometheus -->
+<line class="ns-flow" x1="250" y1="275" x2="152" y2="275" stroke="#f85149" stroke-width="2" marker-end="url(#nsa)"/>
+
+<!-- label -->
+<rect x="28" y="316" width="364" height="88" rx="6" fill="#f8514912" stroke="#f85149" stroke-width="0.5"/>
+<text x="210" y="338" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">Any pod can reach any other pod on any port.</text>
+<text x="210" y="356" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Compromised pod reaches postgres directly.</text>
+<text x="210" y="374" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Prometheus scrapes secrets from other namespaces.</text>
+<text x="210" y="392" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">Lateral movement is completely unimpeded.</text>
+
+<!-- ── RIGHT: WITH NetworkPolicy ── -->
+<text x="650" y="28" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="13" fill="#3fb950" font-weight="600">AFTER — NetworkPolicy enforced</text>
+<text x="650" y="46" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">default-deny + explicit allow rules per namespace</text>
+
+<!-- Cluster box -->
+<rect x="460" y="58" width="380" height="360" rx="10" fill="#3fb95008" stroke="#3fb950" stroke-width="1.5"/>
+
+<!-- NS: payments boundary -->
+<rect x="474" y="74" width="224" height="144" rx="8" fill="none" stroke="#58a6ff" stroke-width="2"/>
+<text x="586" y="92" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#58a6ff">ns: payments  [default-deny]</text>
+
+<!-- frontend in ns:payments -->
+<rect x="486" y="100" width="80" height="70" rx="8" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+<text x="526" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950" font-weight="600">frontend</text>
+<text x="526" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.1.4</text>
+
+<!-- api in ns:payments -->
+<rect x="598" y="100" width="80" height="70" rx="8" fill="#3fb95022" stroke="#3fb950" stroke-width="1"/>
+<text x="638" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#3fb950" font-weight="600">api</text>
+<text x="638" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.1.5</text>
+
+<!-- NS: db boundary -->
+<rect x="710" y="74" width="118" height="144" rx="8" fill="none" stroke="#f85149" stroke-width="2"/>
+<text x="769" y="92" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#f85149">ns: db  [deny-all]</text>
+
+<!-- postgres in ns:db -->
+<rect x="720" y="100" width="90" height="70" rx="8" fill="#f8514922" stroke="#f85149" stroke-width="1"/>
+<text x="765" y="128" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" font-weight="600">postgres</text>
+<text x="765" y="146" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">10.0.2.5</text>
+
+<!-- NS: monitoring boundary -->
+<rect x="474" y="228" width="140" height="90" rx="8" fill="none" stroke="#d29922" stroke-width="2"/>
+<text x="544" y="245" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#d29922">ns: monitoring</text>
+
+<!-- prometheus -->
+<rect x="486" y="254" width="100" height="56" rx="8" fill="#d2992222" stroke="#d29922" stroke-width="1"/>
+<text x="536" y="278" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#d29922" font-weight="600">prometheus</text>
+<text x="536" y="294" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8b949e">scrape :metrics only</text>
+
+<!-- compromised pod (isolated) -->
+<rect x="650" y="254" width="120" height="56" rx="8" fill="#f8514922" stroke="#f85149" stroke-width="2" stroke-dasharray="4 2"/>
+<text x="710" y="274" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#f85149" font-weight="600">☠ compromised</text>
+<text x="710" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6e7681">blocked — can't reach anything</text>
+
+<!-- ALLOWED arrows (green) -->
+<!-- frontend → api (allowed) -->
+<line class="ns-flow" x1="566" y1="135" x2="596" y2="135" stroke="#3fb950" stroke-width="2" marker-end="url(#nga)"/>
+<text x="581" y="126" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#3fb950">✓ :8080</text>
+
+<!-- api → postgres (allowed cross-ns explicit) -->
+<line class="ns-flow" x1="678" y1="135" x2="718" y2="135" stroke="#3fb950" stroke-width="2" marker-end="url(#nga)"/>
+<text x="698" y="126" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#3fb950">✓ :5432</text>
+
+<!-- prometheus → api metrics (allowed) -->
+<line class="ns-flow2" x1="586" y1="254" x2="638" y2="172" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#nga)"/>
+<text x="588" y="220" font-family="IBM Plex Mono,monospace" font-size="9" fill="#d29922">✓ /metrics</text>
+
+<!-- BLOCKED arrows from compromised -->
+<!-- compromised → postgres BLOCKED -->
+<line x1="710" y1="254" x2="765" y2="172" stroke="#f85149" stroke-width="1.5" stroke-dasharray="3 2"/>
+<circle cx="738" cy="213" r="8" fill="#f8514933" stroke="#f85149" stroke-width="1.5"/>
+<line x1="733" y1="208" x2="743" y2="218" stroke="#f85149" stroke-width="1.5"/>
+<line x1="743" y1="208" x2="733" y2="218" stroke="#f85149" stroke-width="1.5"/>
+
+<!-- compromised → api BLOCKED -->
+<line x1="660" y1="260" x2="638" y2="172" stroke="#f85149" stroke-width="1.5" stroke-dasharray="3 2"/>
+<circle cx="649" cy="216" r="8" fill="#f8514933" stroke="#f85149" stroke-width="1.5"/>
+<line x1="644" y1="211" x2="654" y2="221" stroke="#f85149" stroke-width="1.5"/>
+<line x1="654" y1="211" x2="644" y2="221" stroke="#f85149" stroke-width="1.5"/>
+
+<!-- label -->
+<rect x="468" y="328" width="364" height="76" rx="6" fill="#3fb95012" stroke="#3fb950" stroke-width="0.5"/>
+<text x="650" y="348" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#3fb950">default-deny stops all unintended communication.</text>
+<text x="650" y="366" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Compromised pod can't reach postgres or api.</text>
+<text x="650" y="384" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#8b949e">Prometheus scrapes only /metrics endpoints.</text>
+<text x="650" y="402" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#3fb950">Lateral movement contained to the source pod.</text>
+
+<!-- Divider -->
+<line x1="430" y1="58" x2="430" y2="418" stroke="#30363d" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="430" y="440" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#6e7681">vs</text>
+</svg>
+</div>
 </section>
 
 <!-- ────────────────── 09 ────────────────── -->
@@ -1163,679 +1712,6 @@
   <span class="callout-text"><strong>Tools to know:</strong> <code>kube-bench</code> (CIS benchmark), <code>kubeaudit</code> (manifest auditing), <code>Trivy</code> (image + IaC scanning), <code>Falco</code> (runtime detection), <code>OPA/Gatekeeper</code> or <code>Kyverno</code> (policy engine), <code>kubescape</code> (NSA/CISA hardening), <code>Tetragon</code> (eBPF observability).</span>
 </div>
 
-</section>
-
-<!-- ────────────────── 15 ────────────────── -->
-<section id="s15">
-<h2><span class="sec-num">15</span> Hands-On: Deploy a Tomcat App</h2>
-<p>Theory without practice is incomplete. This section walks through taking a <strong>typical Java web application packaged as a .war inside a zip</strong> and getting it running on Kubernetes — the "insecure-but-working" way first, so you understand the baseline before hardening it in §16.</p>
-
-<div class="callout info">
-  <span class="icon">📦</span>
-  <span class="callout-text"><strong>Scenario:</strong> You receive <code>myapp.zip</code> containing a compiled <code>myapp.war</code>, a <code>server.xml</code> with custom Tomcat configuration, and a <code>setenv.sh</code> for JVM options. Your goal: containerize it and deploy to a K8s cluster.</span>
-</div>
-
-<h3>Step 1 — Extract &amp; Examine the Zip</h3>
-<p>Start by understanding what's inside. Developers often bundle configs, environment-specific properties, and sometimes credentials in the zip.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal</div>
-<pre><span class="comment"># Unpack and inspect</span>
-<span class="val">$</span> unzip myapp.zip -d myapp/
-<span class="val">$</span> tree myapp/
-myapp/
-├── myapp.war
-├── server.xml
-├── setenv.sh
-└── db-config.properties    <span class="comment"># ← watch out — might contain creds!</span>
-
-<span class="comment"># Check for embedded secrets</span>
-<span class="val">$</span> grep -ri "password\|secret\|key" myapp/
-<span class="danger-val">db-config.properties:db.password=Pr0d_S3cret!</span>   <span class="comment"># ← found one</span></pre>
-</div>
-
-<div class="callout warn">
-  <span class="icon">⚠</span>
-  <span class="callout-text"><strong>Red flag:</strong> Credentials in the zip. These must be extracted, stored in a K8s Secret (or external secrets manager), and injected at runtime — never baked into the image. We'll address this in §16.</span>
-</div>
-
-<h3>Step 2 — Write the Dockerfile</h3>
-<p>Use the official Tomcat base image and copy the WAR into the <code>webapps</code> directory. Tomcat auto-deploys it on startup.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>Dockerfile</div>
-<pre><span class="comment"># Start with the official Tomcat image</span>
-<span class="key">FROM</span> <span class="val">tomcat:10.1-jdk17</span>
-
-<span class="comment"># Remove default apps (manager, host-manager, ROOT) — attack surface</span>
-<span class="key">RUN</span> <span class="val">rm -rf /usr/local/tomcat/webapps/*</span>
-
-<span class="comment"># Copy in the WAR file</span>
-<span class="key">COPY</span> <span class="val">myapp/myapp.war /usr/local/tomcat/webapps/ROOT.war</span>
-
-<span class="comment"># Copy custom server.xml</span>
-<span class="key">COPY</span> <span class="val">myapp/server.xml /usr/local/tomcat/conf/server.xml</span>
-
-<span class="comment"># Copy JVM settings</span>
-<span class="key">COPY</span> <span class="val">myapp/setenv.sh /usr/local/tomcat/bin/setenv.sh</span>
-
-<span class="comment"># Expose the default Tomcat port</span>
-<span class="key">EXPOSE</span> <span class="val">8080</span>
-
-<span class="key">CMD</span> [<span class="str">"catalina.sh"</span>, <span class="str">"run"</span>]</pre>
-</div>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — build &amp; push</div>
-<pre><span class="comment"># Build the image</span>
-<span class="val">$</span> docker build -t registry.example.com/myapp:v1.0.0 .
-
-<span class="comment"># Push to your container registry</span>
-<span class="val">$</span> docker push registry.example.com/myapp:v1.0.0</pre>
-</div>
-
-<h3>Step 3 — Create the Kubernetes Namespace</h3>
-<p>Always deploy into a dedicated namespace — never into <code>default</code>. This scopes RBAC, NetworkPolicies, and resource quotas.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>namespace.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
-<span class="key">kind:</span> <span class="val">Namespace</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">labels:</span>
-    <span class="key">team:</span> <span class="val">backend</span></pre>
-</div>
-
-<h3>Step 4 — Write the Deployment</h3>
-<p>A Deployment manages pod replicas and handles rolling updates. This is the "get it running" version — intentionally <strong>not</strong> hardened yet.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>deployment.yaml — basic (unhardened)</div>
-<pre><span class="key">apiVersion:</span> <span class="val">apps/v1</span>
-<span class="key">kind:</span> <span class="val">Deployment</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">replicas:</span> <span class="val">2</span>
-  <span class="key">selector:</span>
-    <span class="key">matchLabels:</span>
-      <span class="key">app:</span> <span class="val">tomcat-app</span>
-  <span class="key">template:</span>
-    <span class="key">metadata:</span>
-      <span class="key">labels:</span>
-        <span class="key">app:</span> <span class="val">tomcat-app</span>
-    <span class="key">spec:</span>
-      <span class="key">containers:</span>
-      - <span class="key">name:</span> <span class="val">tomcat</span>
-        <span class="key">image:</span> <span class="val">registry.example.com/myapp:v1.0.0</span>
-        <span class="key">ports:</span>
-        - <span class="key">containerPort:</span> <span class="val">8080</span>
-        <span class="key">env:</span>
-        - <span class="key">name:</span> <span class="val">DB_PASSWORD</span>           <span class="comment"># ← BAD: secret in env var</span>
-          <span class="key">value:</span> <span class="danger-val">"Pr0d_S3cret!"</span>
-        <span class="key">readinessProbe:</span>
-          <span class="key">httpGet:</span>
-            <span class="key">path:</span> <span class="val">/</span>
-            <span class="key">port:</span> <span class="val">8080</span>
-          <span class="key">initialDelaySeconds:</span> <span class="val">15</span>
-          <span class="key">periodSeconds:</span> <span class="val">5</span>
-        <span class="key">livenessProbe:</span>
-          <span class="key">httpGet:</span>
-            <span class="key">path:</span> <span class="val">/</span>
-            <span class="key">port:</span> <span class="val">8080</span>
-          <span class="key">initialDelaySeconds:</span> <span class="val">30</span>
-          <span class="key">periodSeconds:</span> <span class="val">10</span></pre>
-</div>
-
-<h3>Step 5 — Create the Service</h3>
-<p>A Service gives your pods a stable network endpoint. Use <code>ClusterIP</code> for internal-only access, or <code>LoadBalancer</code> to expose externally.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>service.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
-<span class="key">kind:</span> <span class="val">Service</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">selector:</span>
-    <span class="key">app:</span> <span class="val">tomcat-app</span>
-  <span class="key">ports:</span>
-  - <span class="key">port:</span> <span class="val">80</span>
-    <span class="key">targetPort:</span> <span class="val">8080</span>
-    <span class="key">protocol:</span> <span class="val">TCP</span>
-  <span class="key">type:</span> <span class="val">ClusterIP</span></pre>
-</div>
-
-<h3>Step 6 — Expose via Ingress</h3>
-<p>An Ingress routes external HTTP(S) traffic to your Service. In production you'd terminate TLS here.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>ingress.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
-<span class="key">kind:</span> <span class="val">Ingress</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-  <span class="key">annotations:</span>
-    <span class="key">nginx.ingress.kubernetes.io/rewrite-target:</span> <span class="val">/</span>
-<span class="key">spec:</span>
-  <span class="key">ingressClassName:</span> <span class="val">nginx</span>
-  <span class="key">rules:</span>
-  - <span class="key">host:</span> <span class="val">myapp.example.com</span>
-    <span class="key">http:</span>
-      <span class="key">paths:</span>
-      - <span class="key">path:</span> <span class="val">/</span>
-        <span class="key">pathType:</span> <span class="val">Prefix</span>
-        <span class="key">backend:</span>
-          <span class="key">service:</span>
-            <span class="key">name:</span> <span class="val">tomcat-app</span>
-            <span class="key">port:</span>
-              <span class="key">number:</span> <span class="val">80</span></pre>
-</div>
-
-<h3>Step 7 — Deploy Everything</h3>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — apply &amp; verify</div>
-<pre><span class="comment"># Apply all manifests</span>
-<span class="val">$</span> kubectl apply -f namespace.yaml
-<span class="val">$</span> kubectl apply -f deployment.yaml
-<span class="val">$</span> kubectl apply -f service.yaml
-<span class="val">$</span> kubectl apply -f ingress.yaml
-
-<span class="comment"># Watch pods come up</span>
-<span class="val">$</span> kubectl get pods -n tomcat-app -w
-NAME                          READY   STATUS    RESTARTS   AGE
-tomcat-app-6d8f9b7c4d-k2x9p  1/1     Running   0          42s
-tomcat-app-6d8f9b7c4d-m8n3q  1/1     Running   0          42s
-
-<span class="comment"># Verify the service endpoint</span>
-<span class="val">$</span> kubectl get svc -n tomcat-app
-NAME         TYPE        CLUSTER-IP      PORT(S)
-tomcat-app   ClusterIP   10.96.142.87    80/TCP
-
-<span class="comment"># Test connectivity from inside the cluster</span>
-<span class="val">$</span> kubectl run curl-test --rm -it --image=curlimages/curl -- \
-    curl -s http://tomcat-app.tomcat-app.svc.cluster.local/</pre>
-</div>
-
-<div class="diagram">
-  <div class="diagram-title">What You've Built — Basic Tomcat Deployment</div>
-  <div class="flow">
-    <div class="flow-step" style="border-color:var(--cyan)">Client<br><small style="opacity:.6">browser</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-step" style="border-color:var(--purple)">Ingress<br><small style="opacity:.6">nginx</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-step" style="border-color:var(--green)">Service<br><small style="opacity:.6">ClusterIP :80</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-step" style="border-color:var(--orange)">Pod × 2<br><small style="opacity:.6">Tomcat :8080</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-step" style="border-color:var(--red)">DB<br><small style="opacity:.6">password in env</small></div>
-  </div>
-</div>
-
-<div class="callout warn">
-  <span class="icon">⚠</span>
-  <span class="callout-text"><strong>This deployment works — but it's insecure.</strong> It runs as root, has no resource limits, no network segmentation, a hardcoded password in an env var, uses a mutable tag, and has no security context at all. Section §16 fixes all of this.</span>
-</div>
-</section>
-
-<!-- ────────────────── 16 ────────────────── -->
-<section id="s16">
-<h2><span class="sec-num">16</span> Hands-On: Secure the Deployment</h2>
-<p>Now we take the working Tomcat deployment from §15 and systematically harden it. Each fix maps back to a concept covered earlier in this guide. By the end, you'll have a production-grade, security-reviewed deployment.</p>
-
-<div class="diagram">
-  <div class="diagram-title">Security Hardening — Layer by Layer</div>
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <div class="attack-layer">
-      <div class="attack-label" style="color:var(--red)">Image</div>
-      <div class="attack-bar high">
-        <span class="attack-tag">Non-root base</span>
-        <span class="attack-tag">Digest pinning</span>
-        <span class="attack-tag">Strip default apps</span>
-        <span class="attack-tag">Vuln scan</span>
-      </div>
-    </div>
-    <div class="attack-layer">
-      <div class="attack-label" style="color:var(--orange)">Pod Spec</div>
-      <div class="attack-bar med">
-        <span class="attack-tag">runAsNonRoot</span>
-        <span class="attack-tag">readOnlyRootFilesystem</span>
-        <span class="attack-tag">Drop ALL caps</span>
-        <span class="attack-tag">seccomp</span>
-      </div>
-    </div>
-    <div class="attack-layer">
-      <div class="attack-label" style="color:var(--orange)">Secrets</div>
-      <div class="attack-bar med">
-        <span class="attack-tag">K8s Secret object</span>
-        <span class="attack-tag">Volume mount</span>
-        <span class="attack-tag">RBAC scoped</span>
-      </div>
-    </div>
-    <div class="attack-layer">
-      <div class="attack-label" style="color:var(--green)">Network</div>
-      <div class="attack-bar low">
-        <span class="attack-tag">Default-deny</span>
-        <span class="attack-tag">Ingress whitelist</span>
-        <span class="attack-tag">Egress restricted</span>
-      </div>
-    </div>
-    <div class="attack-layer">
-      <div class="attack-label" style="color:var(--green)">RBAC</div>
-      <div class="attack-bar low">
-        <span class="attack-tag">Dedicated SA</span>
-        <span class="attack-tag">No auto-mount</span>
-        <span class="attack-tag">Least privilege</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<h3>Fix 1 — Harden the Dockerfile (§07, §10)</h3>
-<p>The base <code>tomcat:10.1-jdk17</code> image runs as root and includes default webapps that expose management endpoints. Rebuild with a non-root user and digest-pinned base.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>Dockerfile.hardened</div>
-<pre><span class="comment"># Pin by digest, not tag — prevents supply chain hijack (§10)</span>
-<span class="key">FROM</span> <span class="val">tomcat:10.1-jdk17@sha256:a1b2c3d4e5f6...</span>
-
-<span class="comment"># Remove ALL default webapps — manager, host-manager, docs, examples</span>
-<span class="key">RUN</span> <span class="val">rm -rf /usr/local/tomcat/webapps/* \
-         /usr/local/tomcat/webapps.dist/*</span>
-
-<span class="comment"># Create a non-root user for Tomcat</span>
-<span class="key">RUN</span> <span class="val">groupadd -r tomcat && useradd -r -g tomcat -d /usr/local/tomcat -s /sbin/nologin tomcat</span>
-
-<span class="comment"># Create a writable work directory (needed at runtime)</span>
-<span class="key">RUN</span> <span class="val">mkdir -p /usr/local/tomcat/work /usr/local/tomcat/temp /usr/local/tomcat/logs \
-    && chown -R tomcat:tomcat /usr/local/tomcat</span>
-
-<span class="comment"># Copy application</span>
-<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/myapp.war /usr/local/tomcat/webapps/ROOT.war</span>
-<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/server.xml /usr/local/tomcat/conf/server.xml</span>
-<span class="key">COPY</span> <span class="val">--chown=tomcat:tomcat myapp/setenv.sh  /usr/local/tomcat/bin/setenv.sh</span>
-
-<span class="comment"># Do NOT copy db-config.properties — secrets come from K8s</span>
-
-<span class="comment"># Switch to non-root (§07)</span>
-<span class="key">USER</span> <span class="val">tomcat</span>
-<span class="key">EXPOSE</span> <span class="val">8080</span>
-<span class="key">CMD</span> [<span class="str">"catalina.sh"</span>, <span class="str">"run"</span>]</pre>
-</div>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — build, scan, sign</div>
-<pre><span class="comment"># Build</span>
-<span class="val">$</span> docker build -f Dockerfile.hardened -t registry.example.com/myapp:v1.1.0 .
-
-<span class="comment"># Scan for vulnerabilities before pushing (§10)</span>
-<span class="val">$</span> trivy image registry.example.com/myapp:v1.1.0
-<span class="comment"># Fix any CRITICAL/HIGH findings before proceeding</span>
-
-<span class="comment"># Push and sign with cosign (§10)</span>
-<span class="val">$</span> docker push registry.example.com/myapp:v1.1.0
-<span class="val">$</span> cosign sign registry.example.com/myapp:v1.1.0
-
-<span class="comment"># Grab the digest for pinning in K8s manifests</span>
-<span class="val">$</span> docker inspect --format='{{index .RepoDigests 0}}' registry.example.com/myapp:v1.1.0
-registry.example.com/myapp@sha256:7f8e9d...</pre>
-</div>
-
-<h3>Fix 2 — Extract Secrets from the Image (§09)</h3>
-<p>The <code>db-config.properties</code> file containing the password was in the zip. We store it as a K8s Secret and mount it as a volume — never an env var.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — create the secret</div>
-<pre><span class="comment"># Create the secret imperatively (good for one-off; in prod use sealed-secrets or ESO)</span>
-<span class="val">$</span> kubectl create secret generic tomcat-db-creds \
-    --namespace=tomcat-app \
-    --from-literal=db.password='Pr0d_S3cret!' \
-    --from-literal=db.username='app_user'
-
-<span class="comment"># Verify it exists (values are base64, not encrypted by default!)</span>
-<span class="val">$</span> kubectl get secret tomcat-db-creds -n tomcat-app -o yaml</pre>
-</div>
-
-<h3>Fix 3 — Create a Dedicated ServiceAccount (§05, §06)</h3>
-<p>Don't use the <code>default</code> ServiceAccount. Create one with <code>automountServiceAccountToken: false</code> since this app doesn't need to talk to the K8s API.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>serviceaccount.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
-<span class="key">kind:</span> <span class="val">ServiceAccount</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app-sa</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">automountServiceAccountToken:</span> <span class="danger-val">false</span>  <span class="comment"># no API access needed</span></pre>
-</div>
-
-<h3>Fix 4 — Harden the Deployment Spec (§07)</h3>
-<p>Apply every pod security best practice: non-root, drop capabilities, read-only rootfs, resource limits, seccomp, and mount secrets as volumes.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>deployment-hardened.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">apps/v1</span>
-<span class="key">kind:</span> <span class="val">Deployment</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">replicas:</span> <span class="val">2</span>
-  <span class="key">selector:</span>
-    <span class="key">matchLabels:</span>
-      <span class="key">app:</span> <span class="val">tomcat-app</span>
-  <span class="key">template:</span>
-    <span class="key">metadata:</span>
-      <span class="key">labels:</span>
-        <span class="key">app:</span> <span class="val">tomcat-app</span>
-    <span class="key">spec:</span>
-      <span class="key">serviceAccountName:</span> <span class="val">tomcat-app-sa</span>      <span class="comment"># dedicated SA (§05)</span>
-      <span class="key">automountServiceAccountToken:</span> <span class="danger-val">false</span>  <span class="comment"># belt + suspenders</span>
-
-      <span class="comment"># ── Pod-level security context (§07) ──</span>
-      <span class="key">securityContext:</span>
-        <span class="key">runAsNonRoot:</span> <span class="val">true</span>
-        <span class="key">runAsUser:</span> <span class="val">10001</span>
-        <span class="key">runAsGroup:</span> <span class="val">10001</span>
-        <span class="key">fsGroup:</span> <span class="val">10001</span>
-        <span class="key">seccompProfile:</span>
-          <span class="key">type:</span> <span class="val">RuntimeDefault</span>
-
-      <span class="key">containers:</span>
-      - <span class="key">name:</span> <span class="val">tomcat</span>
-        <span class="comment"># Digest-pinned image (§10)</span>
-        <span class="key">image:</span> <span class="val">registry.example.com/myapp@sha256:7f8e9d...</span>
-        <span class="key">ports:</span>
-        - <span class="key">containerPort:</span> <span class="val">8080</span>
-
-        <span class="comment"># ── Container-level security context ──</span>
-        <span class="key">securityContext:</span>
-          <span class="key">allowPrivilegeEscalation:</span> <span class="danger-val">false</span>
-          <span class="key">readOnlyRootFilesystem:</span> <span class="val">true</span>
-          <span class="key">capabilities:</span>
-            <span class="key">drop:</span> [<span class="str">"ALL"</span>]
-
-        <span class="comment"># ── Resource limits (prevent crypto mining) ──</span>
-        <span class="key">resources:</span>
-          <span class="key">requests:</span>
-            <span class="key">cpu:</span> <span class="str">"250m"</span>
-            <span class="key">memory:</span> <span class="str">"512Mi"</span>
-          <span class="key">limits:</span>
-            <span class="key">cpu:</span> <span class="str">"1"</span>
-            <span class="key">memory:</span> <span class="str">"1Gi"</span>
-
-        <span class="comment"># ── Mount secrets as files, NOT env vars (§09) ──</span>
-        <span class="key">volumeMounts:</span>
-        - <span class="key">name:</span> <span class="val">db-creds</span>
-          <span class="key">mountPath:</span> <span class="val">/etc/secrets/db</span>
-          <span class="key">readOnly:</span> <span class="val">true</span>
-        <span class="comment"># Tomcat needs writable dirs for work, temp, logs</span>
-        - <span class="key">name:</span> <span class="val">tomcat-work</span>
-          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/work</span>
-        - <span class="key">name:</span> <span class="val">tomcat-temp</span>
-          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/temp</span>
-        - <span class="key">name:</span> <span class="val">tomcat-logs</span>
-          <span class="key">mountPath:</span> <span class="val">/usr/local/tomcat/logs</span>
-
-        <span class="key">readinessProbe:</span>
-          <span class="key">httpGet:</span>
-            <span class="key">path:</span> <span class="val">/</span>
-            <span class="key">port:</span> <span class="val">8080</span>
-          <span class="key">initialDelaySeconds:</span> <span class="val">15</span>
-          <span class="key">periodSeconds:</span> <span class="val">5</span>
-        <span class="key">livenessProbe:</span>
-          <span class="key">httpGet:</span>
-            <span class="key">path:</span> <span class="val">/</span>
-            <span class="key">port:</span> <span class="val">8080</span>
-          <span class="key">initialDelaySeconds:</span> <span class="val">30</span>
-          <span class="key">periodSeconds:</span> <span class="val">10</span>
-
-      <span class="key">volumes:</span>
-      - <span class="key">name:</span> <span class="val">db-creds</span>
-        <span class="key">secret:</span>
-          <span class="key">secretName:</span> <span class="val">tomcat-db-creds</span>
-      - <span class="key">name:</span> <span class="val">tomcat-work</span>
-        <span class="key">emptyDir:</span> {}
-      - <span class="key">name:</span> <span class="val">tomcat-temp</span>
-        <span class="key">emptyDir:</span> {}
-      - <span class="key">name:</span> <span class="val">tomcat-logs</span>
-        <span class="key">emptyDir:</span> {}               <span class="comment"># ephemeral, non-persistent</span></pre>
-</div>
-
-<h3>Fix 5 — Apply Network Policies (§08)</h3>
-<p>Start with default-deny, then whitelist only the traffic paths the application actually needs.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-default-deny.yaml</div>
-<pre><span class="comment"># Deny all ingress AND egress in the namespace</span>
-<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
-<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">default-deny-all</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">podSelector:</span> {}
-  <span class="key">policyTypes:</span>
-  - <span class="val">Ingress</span>
-  - <span class="val">Egress</span></pre>
-</div>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-allow-ingress.yaml</div>
-<pre><span class="comment"># Allow traffic from the ingress controller only</span>
-<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
-<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">allow-ingress-to-tomcat</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">podSelector:</span>
-    <span class="key">matchLabels:</span>
-      <span class="key">app:</span> <span class="val">tomcat-app</span>
-  <span class="key">policyTypes:</span> [<span class="val">Ingress</span>]
-  <span class="key">ingress:</span>
-  - <span class="key">from:</span>
-    - <span class="key">namespaceSelector:</span>
-        <span class="key">matchLabels:</span>
-          <span class="key">kubernetes.io/metadata.name:</span> <span class="val">ingress-nginx</span>
-    <span class="key">ports:</span>
-    - <span class="key">port:</span> <span class="val">8080</span>
-      <span class="key">protocol:</span> <span class="val">TCP</span></pre>
-</div>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>netpol-allow-egress.yaml</div>
-<pre><span class="comment"># Allow egress only to the database and DNS</span>
-<span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
-<span class="key">kind:</span> <span class="val">NetworkPolicy</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">allow-tomcat-egress</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-<span class="key">spec:</span>
-  <span class="key">podSelector:</span>
-    <span class="key">matchLabels:</span>
-      <span class="key">app:</span> <span class="val">tomcat-app</span>
-  <span class="key">policyTypes:</span> [<span class="val">Egress</span>]
-  <span class="key">egress:</span>
-  <span class="comment"># DNS resolution (kube-dns)</span>
-  - <span class="key">to:</span>
-    - <span class="key">namespaceSelector:</span>
-        <span class="key">matchLabels:</span>
-          <span class="key">kubernetes.io/metadata.name:</span> <span class="val">kube-system</span>
-    <span class="key">ports:</span>
-    - <span class="key">port:</span> <span class="val">53</span>
-      <span class="key">protocol:</span> <span class="val">UDP</span>
-    - <span class="key">port:</span> <span class="val">53</span>
-      <span class="key">protocol:</span> <span class="val">TCP</span>
-  <span class="comment"># Database (example: RDS on a specific CIDR)</span>
-  - <span class="key">to:</span>
-    - <span class="key">ipBlock:</span>
-        <span class="key">cidr:</span> <span class="val">10.0.50.0/24</span>     <span class="comment"># DB subnet</span>
-    <span class="key">ports:</span>
-    - <span class="key">port:</span> <span class="val">5432</span>
-      <span class="key">protocol:</span> <span class="val">TCP</span>          <span class="comment"># PostgreSQL</span></pre>
-</div>
-
-<h3>Fix 6 — Enable PSA Enforcement (§07)</h3>
-<p>Label the namespace so Kubernetes rejects any pod that doesn't meet the <strong>restricted</strong> security profile.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>namespace-hardened.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">v1</span>
-<span class="key">kind:</span> <span class="val">Namespace</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">labels:</span>
-    <span class="key">team:</span> <span class="val">backend</span>
-    <span class="comment"># Pod Security Admission labels</span>
-    <span class="key">pod-security.kubernetes.io/enforce:</span> <span class="val">restricted</span>
-    <span class="key">pod-security.kubernetes.io/enforce-version:</span> <span class="val">latest</span>
-    <span class="key">pod-security.kubernetes.io/warn:</span> <span class="val">restricted</span>
-    <span class="key">pod-security.kubernetes.io/audit:</span> <span class="val">restricted</span></pre>
-</div>
-
-<h3>Fix 7 — Add TLS to the Ingress (§12)</h3>
-<p>Terminate TLS at the Ingress layer. Use cert-manager to automate certificate provisioning.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>ingress-tls.yaml</div>
-<pre><span class="key">apiVersion:</span> <span class="val">networking.k8s.io/v1</span>
-<span class="key">kind:</span> <span class="val">Ingress</span>
-<span class="key">metadata:</span>
-  <span class="key">name:</span> <span class="val">tomcat-app</span>
-  <span class="key">namespace:</span> <span class="val">tomcat-app</span>
-  <span class="key">annotations:</span>
-    <span class="key">nginx.ingress.kubernetes.io/ssl-redirect:</span> <span class="str">"true"</span>
-    <span class="key">nginx.ingress.kubernetes.io/force-ssl-redirect:</span> <span class="str">"true"</span>
-    <span class="key">cert-manager.io/cluster-issuer:</span> <span class="val">letsencrypt-prod</span>
-<span class="key">spec:</span>
-  <span class="key">ingressClassName:</span> <span class="val">nginx</span>
-  <span class="key">tls:</span>
-  - <span class="key">hosts:</span>
-    - <span class="val">myapp.example.com</span>
-    <span class="key">secretName:</span> <span class="val">myapp-tls-cert</span>
-  <span class="key">rules:</span>
-  - <span class="key">host:</span> <span class="val">myapp.example.com</span>
-    <span class="key">http:</span>
-      <span class="key">paths:</span>
-      - <span class="key">path:</span> <span class="val">/</span>
-        <span class="key">pathType:</span> <span class="val">Prefix</span>
-        <span class="key">backend:</span>
-          <span class="key">service:</span>
-            <span class="key">name:</span> <span class="val">tomcat-app</span>
-            <span class="key">port:</span>
-              <span class="key">number:</span> <span class="val">80</span></pre>
-</div>
-
-<h3>Verification — Audit Your Work</h3>
-<p>Run these checks to confirm the hardening is in place.</p>
-
-<div class="code-block">
-  <div class="code-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>terminal — security verification</div>
-<pre><span class="comment"># ① Verify pod is running as non-root</span>
-<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- id
-uid=10001 gid=10001 groups=10001
-
-<span class="comment"># ② Verify read-only root filesystem</span>
-<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- touch /test
-touch: /test: Read-only file system   <span class="comment"># ✓ expected</span>
-
-<span class="comment"># ③ Verify SA token is NOT mounted</span>
-<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- \
-    ls /var/run/secrets/kubernetes.io/serviceaccount 2>&amp;1
-ls: cannot access '...': No such file or directory   <span class="comment"># ✓ expected</span>
-
-<span class="comment"># ④ Verify secrets are mounted as files</span>
-<span class="val">$</span> kubectl exec -n tomcat-app deploy/tomcat-app -- \
-    ls /etc/secrets/db/
-db.password  db.username
-
-<span class="comment"># ⑤ Verify NetworkPolicy is blocking lateral movement</span>
-<span class="val">$</span> kubectl run probe --rm -it -n tomcat-app --image=busybox -- \
-    wget -qO- --timeout=3 http://some-other-svc.other-ns.svc:8080
-wget: download timed out   <span class="comment"># ✓ blocked by default-deny</span>
-
-<span class="comment"># ⑥ Run kube-bench for CIS compliance</span>
-<span class="val">$</span> kubectl apply -f https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
-<span class="val">$</span> kubectl logs job/kube-bench</pre>
-</div>
-
-<h3>Before &amp; After Comparison</h3>
-<div class="table-wrap">
-<table>
-  <tr><th>Attack Vector</th><th style="color:var(--red)">Before (§15)</th><th style="color:var(--green)">After (§16)</th></tr>
-  <tr>
-    <td>Container runs as</td>
-    <td><code>root (UID 0)</code></td>
-    <td><code>UID 10001 (non-root)</code></td>
-  </tr>
-  <tr>
-    <td>Privilege escalation</td>
-    <td>Allowed (default)</td>
-    <td>Blocked (<code>allowPrivilegeEscalation: false</code>)</td>
-  </tr>
-  <tr>
-    <td>Linux capabilities</td>
-    <td>Full default set</td>
-    <td>All dropped (<code>drop: ["ALL"]</code>)</td>
-  </tr>
-  <tr>
-    <td>Root filesystem</td>
-    <td>Writable</td>
-    <td>Read-only (<code>readOnlyRootFilesystem: true</code>)</td>
-  </tr>
-  <tr>
-    <td>Database password</td>
-    <td>Env var in clear text</td>
-    <td>K8s Secret mounted as file</td>
-  </tr>
-  <tr>
-    <td>SA token</td>
-    <td>Auto-mounted (default SA)</td>
-    <td>Not mounted, dedicated SA</td>
-  </tr>
-  <tr>
-    <td>Image reference</td>
-    <td>Mutable tag (<code>:v1.0.0</code>)</td>
-    <td>Digest-pinned (<code>@sha256:...</code>)</td>
-  </tr>
-  <tr>
-    <td>Network access</td>
-    <td>Flat — reach everything</td>
-    <td>Default-deny, ingress + DB only</td>
-  </tr>
-  <tr>
-    <td>Resource limits</td>
-    <td>None (unbounded)</td>
-    <td>CPU + memory bounded</td>
-  </tr>
-  <tr>
-    <td>TLS</td>
-    <td>Plain HTTP</td>
-    <td>TLS termination at Ingress</td>
-  </tr>
-  <tr>
-    <td>Seccomp</td>
-    <td>Unconfined</td>
-    <td>RuntimeDefault profile</td>
-  </tr>
-  <tr>
-    <td>PSA enforcement</td>
-    <td>None</td>
-    <td>Restricted (namespace-level)</td>
-  </tr>
-</table>
-</div>
-
-<div class="callout tip" style="margin-top:28px">
-  <span class="icon">✓</span>
-  <span class="callout-text"><strong>Next steps for production:</strong> Integrate an external secrets manager (Vault, AWS Secrets Manager) via the Secrets Store CSI Driver. Add Falco or Tetragon for runtime detection. Sign your images with cosign and enforce signature verification via a Kyverno <code>ClusterPolicy</code>. Set up audit logging alerts for any <code>exec</code> into pods in this namespace.</span>
-</div>
 </section>
 
 </main>
