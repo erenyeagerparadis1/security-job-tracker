@@ -907,35 +907,136 @@ function toggleLayer(name) {
 }
 </script>
 
-<h3>Component Security Implications</h3>
+<div class="callout info">
+  <span class="icon">🔑</span>
+  <span class="callout-text"><strong>Can a node run pods from different apps?</strong> Yes — by default the scheduler places any pod on any node that has available CPU and memory, regardless of what else is already running there. A node could simultaneously run a frontend pod, a Prometheus pod, and a CoreDNS pod. You only control co-location when you explicitly configure <strong>node affinity</strong> (attract pods to specific nodes), <strong>taints &amp; tolerations</strong> (repel pods unless they opt in), or <strong>pod anti-affinity</strong> (keep two pod types apart). Without those, it's all capacity-driven.</span>
+</div>
+
+<h3>Full Component Reference</h3>
+<p>Every component visible in the cluster diagram above, explained — what it is, what layer it lives in, and what an attacker gains by compromising it.</p>
+
 <div class="table-wrap">
 <table>
-  <tr><th>Component</th><th>What It Does</th><th style="color:var(--red)">If Compromised…</th></tr>
+  <tr>
+    <th>Component</th>
+    <th>Layer</th>
+    <th>What It Is &amp; Does</th>
+    <th style="color:var(--red)">If Compromised…</th>
+  </tr>
+
+  <!-- ── CONTROL PLANE ── -->
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CONTROL PLANE — dedicated servers, never runs workloads</td></tr>
+
   <tr>
     <td><code>kube-apiserver</code></td>
-    <td>Front door for all API calls. AuthN → AuthZ → Admission → etcd.</td>
-    <td>Full cluster takeover. Every object is readable/writable.</td>
+    <td style="color:var(--purple);white-space:nowrap">Control plane</td>
+    <td>The single front door for everything in the cluster. Every kubectl command, every kubelet heartbeat, every controller action hits this. It enforces AuthN → AuthZ (RBAC) → Admission Controllers before touching etcd. Listens on port <code>6443</code> with mutual TLS.</td>
+    <td>Full cluster takeover. Every object (secrets, RBAC, pods) readable and writable. An attacker with API server access owns the cluster.</td>
   </tr>
+
   <tr>
     <td><code>etcd</code></td>
-    <td>Distributed key-value store holding all cluster state, including Secrets.</td>
-    <td>All secrets in plaintext (unless encryption-at-rest). Complete state extraction.</td>
+    <td style="color:var(--red);white-space:nowrap">Control plane</td>
+    <td>A distributed key-value store that holds <em>all</em> cluster state — every pod spec, every secret, every RBAC rule. Only the API server should talk to it. Listens on port <code>2379</code>. Secrets are stored base64-encoded (not encrypted) unless you configure <code>EncryptionConfiguration</code>.</td>
+    <td>Complete cluster state extraction, bypassing all RBAC. All secrets readable in plaintext. Crown jewel — protect with encryption at rest, TLS client certs, and strict network ACLs.</td>
   </tr>
+
+  <tr>
+    <td><code>kube-scheduler</code></td>
+    <td style="color:var(--purple);white-space:nowrap">Control plane</td>
+    <td>Watches for newly created pods that have no node assigned yet. Picks the best node by scoring against resource requests, affinity rules, taints, topology spread, and priority. Writes the chosen node back to the pod spec in etcd via the API server. It never touches the pod directly.</td>
+    <td>Workload steering. An attacker can force sensitive pods (e.g. secret-reading jobs) onto compromised or attacker-controlled nodes where secrets can be harvested.</td>
+  </tr>
+
+  <tr>
+    <td><code>controller-manager</code></td>
+    <td style="color:var(--purple);white-space:nowrap">Control plane</td>
+    <td>A single binary that runs dozens of control loops — Deployment controller, ReplicaSet controller, ServiceAccount controller, Node controller, Job controller, and more. Each loop watches the API server for drift between desired state and actual state, and reconciles the difference. If you delete a pod that belongs to a Deployment, the Deployment controller sees the gap and creates a replacement.</td>
+    <td>Control loop hijack. Can create or modify Deployments, ServiceAccounts, and RBAC objects cluster-wide. An attacker controlling this can establish persistent backdoor workloads.</td>
+  </tr>
+
+  <tr>
+    <td><code>Ingress controller</code></td>
+    <td style="color:var(--purple);white-space:nowrap">Control plane*</td>
+    <td>A reverse proxy (nginx, Envoy, Traefik) that watches Ingress objects and programs routing rules: hostname + path → Service → pods. Handles TLS termination — it decrypts incoming HTTPS, inspects the request, and forwards cleartext (or re-encrypts with mTLS) to the backend. *Technically runs as pods, often in <code>kube-system</code> or a dedicated namespace.</td>
+    <td>Traffic interception. All inbound traffic passes through it. Compromise lets an attacker inspect, modify, or drop requests before they reach your apps. Also a foothold into the cluster network.</td>
+  </tr>
+
+  <!-- ── NODE AGENTS ── -->
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">NODE AGENTS — run on every worker node as OS processes</td></tr>
+
   <tr>
     <td><code>kubelet</code></td>
-    <td>Runs pods on each node, exposes a local API on port 10250.</td>
-    <td>Exec into any pod on that node, read secrets mounted on that node.</td>
+    <td style="color:var(--orange);white-space:nowrap">Node agent</td>
+    <td>The control plane's agent on each node. Watches the API server for pods assigned to its node, then instructs the container runtime (containerd) to pull images and start containers. Runs liveness/readiness probes. Reports node and pod status back to the API server every ~10s. Exposes a local API on port <code>10250</code> — this is what <code>kubectl exec</code> and <code>kubectl logs</code> tunnel through.</td>
+    <td>Exec into any container on that node, read all secrets mounted on that node, and potentially pivot to the node OS itself. Port 10250 exposed to the internet = immediate full-node compromise.</td>
   </tr>
+
   <tr>
     <td><code>kube-proxy</code></td>
-    <td>Programs iptables/IPVS rules for Service routing.</td>
-    <td>Traffic interception and man-in-the-middle on the node's network.</td>
+    <td style="color:var(--orange);white-space:nowrap">Node agent</td>
+    <td>Programs <code>iptables</code> or IPVS rules on each node to implement Service routing. When a Service gets a ClusterIP, kube-proxy makes sure traffic to that virtual IP gets load-balanced across the healthy pods backing it. It doesn't handle actual packet forwarding — it just programs the kernel networking rules that do.</td>
+    <td>Traffic interception and MITM on the node's network. Can redirect Service traffic to attacker-controlled endpoints, silently stealing credentials or sessions.</td>
   </tr>
+
   <tr>
-    <td><code>scheduler</code></td>
-    <td>Decides which node runs which pod.</td>
-    <td>Workload steering — force sensitive pods to attacker-controlled nodes.</td>
+    <td><code>CRI runtime</code><br><small style="color:var(--text-dim)">(containerd / CRI-O)</small></td>
+    <td style="color:var(--orange);white-space:nowrap">Node agent</td>
+    <td>CRI stands for Container Runtime Interface — the standard API that kubelet uses to manage containers without caring about the underlying implementation. <code>containerd</code> (most common) and <code>CRI-O</code> are the two main runtimes. They pull images from registries, create containers using Linux namespaces and cgroups, manage their lifecycle, and stream logs. The runtime is what actually calls the kernel to create the isolation boundary around your container.</td>
+    <td>Container escape amplification. A vulnerable runtime (e.g. runc CVE) lets a container break out to the node OS. Attacker then has access to all other containers' filesystems and the kubelet API.</td>
   </tr>
+
+  <!-- ── WORKLOAD PODS ── -->
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">WORKLOAD PODS — your application, running in namespaces</td></tr>
+
+  <tr>
+    <td><code>Pod: frontend</code></td>
+    <td style="color:var(--cyan);white-space:nowrap">ns: payments</td>
+    <td>Your user-facing application — a React app, a Tomcat servlet, an nginx serving static assets. It gets its own IP inside the cluster, listens on a port (e.g. <code>3000</code>), and is exposed to the internet via the Ingress controller. Has no inherent K8s awareness — it's just a process that thinks it's on a normal Linux machine.</td>
+    <td>If compromised, an attacker gets a foothold inside the cluster network. Can attempt lateral movement to other pods, scrape the SA token to hit the API server, or try to reach cloud metadata endpoints (169.254.169.254) to steal IAM credentials.</td>
+  </tr>
+
+  <tr>
+    <td><code>Pod: api</code></td>
+    <td style="color:var(--cyan);white-space:nowrap">ns: payments</td>
+    <td>Your backend application — a REST or gRPC service that the frontend talks to. Typically holds a ServiceAccount token that grants it permission to read its own ConfigMaps or Secrets. Connects outward to a database or message queue. Often run as multiple replicas spread across nodes for HA.</td>
+    <td>Higher value target than frontend — usually has DB credentials mounted, wider RBAC permissions, and can reach internal services the frontend cannot. A compromised API pod is often the pivot to database exfil.</td>
+  </tr>
+
+  <!-- ── OBSERVABILITY / SECURITY PODS ── -->
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">OBSERVABILITY &amp; RUNTIME SECURITY — ns: monitoring</td></tr>
+
+  <tr>
+    <td><code>Prometheus</code></td>
+    <td style="color:var(--orange);white-space:nowrap">ns: monitoring</td>
+    <td>A time-series metrics database that scrapes <code>/metrics</code> endpoints from every pod, node, and K8s component. Stores CPU, memory, request rates, error rates, and custom app metrics. Often paired with Grafana for dashboards and Alertmanager for alerts. Uses a pull model — Prometheus goes out and fetches metrics rather than waiting to receive them.</td>
+    <td>Metrics exposure. Prometheus can reach <code>/metrics</code> endpoints across namespaces — if its RBAC or NetworkPolicy is too broad, a compromised Prometheus pod can enumerate all services and scrape sensitive telemetry. Also: Prometheus itself often has no auth by default.</td>
+  </tr>
+
+  <tr>
+    <td><code>Falco</code></td>
+    <td style="color:var(--orange);white-space:nowrap">ns: monitoring</td>
+    <td>A runtime threat detection engine by Sysdig (CNCF project). Uses eBPF or kernel module to intercept syscalls cluster-wide and match them against a rule engine. Can detect: shell spawned in a container, sensitive file read (e.g. <code>/etc/shadow</code>), outbound connection to unexpected IP, container escape attempts. Sends alerts to Slack, Elasticsearch, or a SIEM. Think of it as an IDS that watches kernel syscalls rather than network packets.</td>
+    <td>Blind spot. If Falco is taken down or its rules are bypassed, the cluster loses its runtime detection layer. Attackers target Falco specifically to operate undetected. Protect with strict RBAC and verify Falco alert pipelines are live.</td>
+  </tr>
+
+  <!-- ── KUBE-SYSTEM PODS ── -->
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CLUSTER INTERNALS — ns: kube-system (high-value targets)</td></tr>
+
+  <tr>
+    <td><code>CoreDNS</code></td>
+    <td style="color:var(--red);white-space:nowrap">ns: kube-system</td>
+    <td>The DNS server for the entire cluster. Every pod resolves Service names (e.g. <code>postgres-svc.payments.svc.cluster.local</code>) by querying CoreDNS at the cluster DNS IP (<code>10.96.0.10</code> by default). It watches the API server for Service and Endpoint changes and updates its DNS records automatically. Without CoreDNS, pods can't find each other by name — only by raw IP.</td>
+    <td>DNS poisoning and exfiltration. A compromised CoreDNS can redirect traffic — change <code>postgres-svc</code> to point to an attacker's IP. Also: attackers use DNS queries to exfiltrate data from pods even when all TCP egress is blocked (DNS tunneling).</td>
+  </tr>
+
+  <tr>
+    <td><code>Cilium / Calico</code><br><small style="color:var(--text-dim)">(CNI plugin)</small></td>
+    <td style="color:var(--red);white-space:nowrap">ns: kube-system</td>
+    <td>The CNI (Container Network Interface) plugin — the component that actually implements the K8s network model. Runs as a DaemonSet (one pod per node). Responsible for: assigning pod IPs, programming routes so pods across nodes can talk, and enforcing NetworkPolicies. Cilium uses eBPF to enforce policies at the kernel level without iptables. Calico uses iptables or its own data plane. Without a CNI plugin, pods have no network connectivity at all. Cilium also adds Hubble for network observability and can enforce mTLS via Wireguard.</td>
+    <td>Total network control. Compromise of the CNI plugin = ability to intercept or drop any traffic in the cluster. Can bypass all NetworkPolicies. Also runs as privileged with host network access — a highly sensitive attack surface.</td>
+  </tr>
+
 </table>
 </div>
 
