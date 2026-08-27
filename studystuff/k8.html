@@ -1090,6 +1090,81 @@ function toggleLayer(name) {
     <p>Logical partition for multi-tenancy. RBAC, NetworkPolicy, and ResourceQuotas are scoped to namespaces.</p>
   </div>
 </div>
+
+<h3>Core Object Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Object</th><th>Scope</th><th>What It Is &amp; Does</th><th style="color:var(--red)">Security Risk If Misused</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">WORKLOAD OBJECTS</td></tr>
+  <tr>
+    <td><code>Pod</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>The atom of K8s. One or more containers sharing the same network namespace (same IP, same localhost), same IPC, and optionally the same volumes. Each pod gets a cluster-unique IP. The scheduler places pods on nodes — once placed, a pod doesn't move. If the node dies, the pod dies and is recreated elsewhere by its controller.</td>
+    <td>A privileged pod (<code>privileged: true</code>) or one with <code>hostPID</code>/<code>hostNetwork</code> can escape to the node OS. Any pod with a mounted SA token is one API call away from privilege escalation if RBAC is too broad.</td>
+  </tr>
+  <tr>
+    <td><code>Deployment</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Declares the desired number of pod replicas running a given container image. Owns a ReplicaSet which in turn owns pods. Handles rolling updates (gradually replaces old pods with new ones) and rollback (revert to prior ReplicaSet). You never create pods directly in production — you create a Deployment and it manages them.</td>
+    <td>A Deployment with no resource limits is an open door to crypto-mining or DoS via resource exhaustion. Image tags without digest pinning let a supply chain attack silently swap the image on the next restart.</td>
+  </tr>
+  <tr>
+    <td><code>DaemonSet</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Ensures exactly one pod runs on every node (or a subset). Used for node-level agents: log shippers, Falco, Cilium, node exporters. When a new node joins the cluster, the DaemonSet automatically schedules a pod on it.</td>
+    <td>DaemonSets often need privileged access to the host (Falco needs kernel access, Cilium needs host networking). A compromised DaemonSet pod runs on every node — instant cluster-wide lateral movement.</td>
+  </tr>
+  <tr>
+    <td><code>StatefulSet</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Like a Deployment but for stateful workloads (databases, message queues). Provides stable network identities (<code>pod-0</code>, <code>pod-1</code>…) and ordered, sequential pod creation/deletion. Each pod gets its own PersistentVolumeClaim that is not deleted when the pod is.</td>
+    <td>StatefulSet PVCs persist even after pod deletion — sensitive data can linger on volumes long after a workload is removed. Ensure PVCs are encrypted and cleaned up as part of decommissioning.</td>
+  </tr>
+  <tr>
+    <td><code>Job / CronJob</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Job runs a pod to completion (batch tasks, DB migrations). CronJob creates Jobs on a schedule (think cron syntax). Completed pods are retained for log inspection but don't consume resources.</td>
+    <td>Attackers use CronJobs for persistence — a malicious CronJob runs periodically and is easy to miss in a busy cluster. Audit all CronJobs, especially ones in kube-system or with broad SA permissions.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">NETWORKING OBJECTS</td></tr>
+  <tr>
+    <td><code>Service</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>A stable virtual IP (ClusterIP) that load-balances traffic across all pods matching a label selector. Has three main types: <strong>ClusterIP</strong> (internal only), <strong>NodePort</strong> (exposes on every node's IP at a static port), <strong>LoadBalancer</strong> (provisions a cloud LB). CoreDNS creates a DNS entry: <code>svc-name.namespace.svc.cluster.local</code>.</td>
+    <td>NodePort services expose ports on every node's public IP — easy to accidentally expose internal services to the internet. LoadBalancer services create real cloud resources that incur cost and exposure. Audit all Services of type NodePort/LoadBalancer regularly.</td>
+  </tr>
+  <tr>
+    <td><code>Ingress</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>An L7 routing rule object: hostname + path → Service. Requires an Ingress Controller (nginx, Envoy, Traefik) to actually implement the rules. Handles TLS termination via a Secret reference for the TLS cert. Think of it as the config file for your reverse proxy, managed declaratively.</td>
+    <td>Misconfigured Ingress rules can expose internal services. Wildcard hostnames (<code>*.company.com</code>) can be exploited via subdomain takeover. Always enforce TLS; never serve plaintext in production.</td>
+  </tr>
+  <tr>
+    <td><code>NetworkPolicy</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>A pod-level firewall rule. Selects pods by label and defines which ingress (inbound) and egress (outbound) traffic is allowed. Has no effect unless the CNI plugin enforces it. Without any NetworkPolicy, all traffic is allowed.</td>
+    <td>NetworkPolicy gaps = lateral movement. A single missing egress rule lets a compromised pod reach the cloud metadata endpoint (169.254.169.254) and steal IAM credentials.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CONFIGURATION &amp; IDENTITY OBJECTS</td></tr>
+  <tr>
+    <td><code>ConfigMap</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Stores non-sensitive configuration as key-value pairs. Mounted into pods as files or injected as environment variables. Changes to a mounted ConfigMap are reflected in pods without a restart (within ~1 minute). Not suitable for secrets — no access control beyond RBAC.</td>
+    <td>ConfigMaps are often read by many pods. If someone accidentally stores a password in a ConfigMap, it's readable by anyone with <code>get configmaps</code> permission in that namespace — a surprisingly common mistake.</td>
+  </tr>
+  <tr>
+    <td><code>Secret</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Stores sensitive data (passwords, tokens, TLS certs) as base64-encoded values — <strong>not encrypted</strong> unless you configure EncryptionConfiguration on the API server. Mounted into pods as tmpfs volumes or env vars. Three types: <code>Opaque</code> (generic), <code>kubernetes.io/tls</code> (certs), <code>kubernetes.io/dockerconfigjson</code> (registry auth).</td>
+    <td>Base64 is encoding, not encryption. Anyone with <code>get secrets</code> RBAC permission reads them as plaintext. They're also in etcd unencrypted by default. Prefer external secret managers (Vault, AWS Secrets Manager) synced via CSI driver.</td>
+  </tr>
+  <tr>
+    <td><code>ServiceAccount</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>The identity assigned to a pod. The API server issues a short-lived JWT token to the pod (mounted at <code>/var/run/secrets/kubernetes.io/serviceaccount/token</code>). This token is what the pod uses to authenticate API calls back to the cluster. Every namespace gets a <code>default</code> ServiceAccount automatically.</td>
+    <td>The single most abused object in K8s attacks. Default SA tokens are auto-mounted in every pod even if not needed. A compromised pod with a broad SA can escalate to cluster-admin in one API call. Always set <code>automountServiceAccountToken: false</code> and create purpose-specific SAs with minimal RBAC.</td>
+  </tr>
+  <tr>
+    <td><code>Namespace</code></td><td style="white-space:nowrap">Cluster</td>
+    <td>A logical partition inside the cluster. RBAC roles, NetworkPolicies, and ResourceQuotas are all scoped to namespaces. Names must be unique within a namespace but can repeat across namespaces. Think of it as a security domain boundary — not a hard wall, but the primary isolation primitive K8s offers for multi-tenancy.</td>
+    <td>Namespaces are soft boundaries. A ClusterRoleBinding punches through them. kube-system namespace is especially sensitive — any pod running there with broad permissions can affect the whole cluster.</td>
+  </tr>
+  <tr>
+    <td><code>PersistentVolume / PVC</code></td><td style="white-space:nowrap">Cluster / NS</td>
+    <td>PersistentVolume (PV) is a piece of actual storage (EBS, NFS, local disk) provisioned by an admin or dynamically by a StorageClass. PersistentVolumeClaim (PVC) is a pod's request for storage — K8s binds a PVC to a matching PV. StatefulSets use PVCs to retain data across pod restarts.</td>
+    <td>PVs can be shared across pods if <code>accessMode</code> is <code>ReadWriteMany</code> — a misconfigured shared volume can expose one tenant's data to another. PVs also survive pod deletion by default; sensitive data persists until explicitly deleted and overwritten.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 04 ────────────────── -->
@@ -1143,6 +1218,61 @@ function toggleLayer(name) {
   <span class="icon">⚠</span>
   <span class="callout-text"><strong>Flat network = lateral movement paradise.</strong> A compromised pod can reach every other pod in the cluster by default. NetworkPolicies (§08) are the only in-cluster segmentation mechanism.</span>
 </div>
+
+<h3>Traffic Path Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Traffic Path</th><th>How It Works</th><th>Protocol / Port</th><th style="color:var(--red)">Security Control Needed</th></tr>
+  <tr>
+    <td>External → Ingress</td>
+    <td>User traffic from the internet hits the Ingress controller (nginx/Envoy). TLS terminates here. The controller routes based on hostname and path to the correct ClusterIP Service.</td>
+    <td><code>TCP :443</code> / <code>:80</code></td>
+    <td>TLS certificate, WAF rules, rate limiting, DDoS protection. Never expose plain HTTP in production.</td>
+  </tr>
+  <tr>
+    <td>Service → Pod (ClusterIP)</td>
+    <td>kube-proxy programs iptables/IPVS rules that rewrite the virtual ClusterIP to one of the backing pod IPs. Load balancing is random by default. The pod never sees the Service IP — it sees its own IP as the destination.</td>
+    <td>Any TCP/UDP</td>
+    <td>NetworkPolicy on the receiving pod to restrict which pods can send to it. mTLS to authenticate the caller's identity, not just their IP.</td>
+  </tr>
+  <tr>
+    <td>Pod → Pod (east-west)</td>
+    <td>Direct IP routing via the CNI plugin. No NAT. Pod A at <code>10.0.1.4</code> sends packets directly to Pod B at <code>10.0.2.5</code> even across nodes. The CNI (Cilium/Calico) programs routes on each node's kernel.</td>
+    <td>Any TCP/UDP</td>
+    <td>Default-deny NetworkPolicy. Without it, any compromised pod can reach every other pod on any port — the classic lateral movement scenario.</td>
+  </tr>
+  <tr>
+    <td>Pod → API server</td>
+    <td>Pods that need cluster API access call <code>kubernetes.default.svc</code> (resolves to the API server's ClusterIP). They authenticate with the SA token mounted at <code>/var/run/secrets/…</code>. RBAC then determines what they can do.</td>
+    <td><code>TCP :443</code> (HTTPS)</td>
+    <td>Disable SA token automounting on pods that don't need it. Scope SA RBAC to the minimum needed. Audit SA token usage in audit logs.</td>
+  </tr>
+  <tr>
+    <td>Pod → External internet</td>
+    <td>Pods can make outbound connections to any external IP by default. Traffic NATs through the node's IP. DNS resolves via CoreDNS which forwards external queries upstream.</td>
+    <td>Any</td>
+    <td>Egress NetworkPolicy to restrict outbound destinations. Block <code>169.254.169.254</code> (cloud metadata). Monitor for DNS tunneling (unusually large TXT/AAAA queries).</td>
+  </tr>
+  <tr>
+    <td>kubelet → API server</td>
+    <td>The kubelet on each node maintains a persistent HTTPS connection to the API server, sending node/pod status every ~10 seconds and watching for pod spec changes assigned to its node.</td>
+    <td><code>TCP :6443</code> mTLS</td>
+    <td>Mutual TLS with node client certs. Node authorization mode restricts each kubelet to only read pods assigned to its own node (prevents node-to-node data access).</td>
+  </tr>
+  <tr>
+    <td>API server → kubelet</td>
+    <td>The API server calls the kubelet to execute <code>kubectl exec</code>, <code>kubectl logs</code>, port-forward, and liveness probe checks. This is an inbound connection to the node from the control plane.</td>
+    <td><code>TCP :10250</code> HTTPS</td>
+    <td>Restrict port 10250 to control plane IP only at the firewall/security-group level. Never expose to the internet. This port = full exec capability on all pods on that node.</td>
+  </tr>
+  <tr>
+    <td>etcd → etcd (peer)</td>
+    <td>etcd cluster members replicate data between each other using the Raft consensus protocol. In HA setups (3 or 5 members), peers must reach each other for leader election and log replication.</td>
+    <td><code>TCP :2380</code> mTLS</td>
+    <td>Mutual TLS between etcd peers. Isolate etcd network from all other cluster traffic. Only the API server should be able to reach <code>:2379</code> (client port). Firewall all other access.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 05 ────────────────── -->
@@ -1195,6 +1325,55 @@ function toggleLayer(name) {
   <span class="icon">✓</span>
   <span class="callout-text"><strong>Best practice:</strong> Use OIDC for human access, short-lived ServiceAccount tokens for workloads, and disable anonymous auth (<code>--anonymous-auth=false</code>).</span>
 </div>
+
+<h3>Authentication Method Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Method</th><th>Used By</th><th>How It Works</th><th>Revocation</th><th style="color:var(--red)">Risk &amp; Recommendation</th></tr>
+  <tr>
+    <td><code>X.509 Client Certs</code></td><td>Admins, nodes, internal components</td>
+    <td>Client presents a certificate signed by the cluster CA. The API server extracts <code>CN</code> as username and <code>O</code> as group. Used by kubelet (<code>system:node:nodename</code>), controller-manager, and scheduler. No password or token — just cert + private key in a kubeconfig file.</td>
+    <td style="color:var(--red)">No revocation. To invalidate a cert you must rotate the entire cluster CA, which breaks all existing certs simultaneously.</td>
+    <td>Never give humans long-lived client certs. Use OIDC instead. Short-cert tools (cert-manager, Teleport) mitigate the revocation problem by issuing 1-hour certs.</td>
+  </tr>
+  <tr>
+    <td><code>ServiceAccount JWT</code></td><td>Pods / workloads</td>
+    <td>The API server (or the TokenRequest API) issues a signed JWT. Pods receive it mounted at <code>/var/run/secrets/kubernetes.io/serviceaccount/token</code>. Since K8s 1.24, tokens are audience-bound (only valid for the K8s API), expiry-bound (1 hour default), and not stored in etcd as Secrets — they're generated on demand by the kubelet via TokenRequest.</td>
+    <td style="color:var(--green)">Short-lived; expires automatically. Revocable by deleting the ServiceAccount.</td>
+    <td>Disable automount (<code>automountServiceAccountToken: false</code>) for any pod that doesn't call the K8s API. Create a dedicated SA per workload — never share the <code>default</code> SA.</td>
+  </tr>
+  <tr>
+    <td><code>OIDC</code></td><td>Human users, CI/CD</td>
+    <td>The API server is configured with an OIDC provider (Okta, Azure AD, Dex). Users authenticate to the IdP and receive an ID token (JWT). They pass this token to kubectl via <code>--token</code> or a credential plugin. The API server validates the token signature against the IdP's JWKS endpoint, extracts username/groups from claims.</td>
+    <td style="color:var(--green)">Tokens expire per IdP settings (typically 1 hour). Revoke at the IdP level. Supports MFA at the IdP.</td>
+    <td>Preferred for all human access. Groups from OIDC claims map directly to K8s RBAC groups — centralize access control in your IdP. Use <code>kubelogin</code> or <code>kubeconfig</code> credential plugins to automate token refresh.</td>
+  </tr>
+  <tr>
+    <td><code>Static Token File</code></td><td>Legacy / testing only</td>
+    <td>A CSV file of <code>token,user,uid,groups</code> loaded into the API server at startup. Any request with a matching <code>Authorization: Bearer</code> header is authenticated. Tokens never expire — they're valid until the file changes and the API server restarts.</td>
+    <td style="color:var(--red)">No expiry. No revocation without API server restart. Plain-text tokens at rest.</td>
+    <td>Never use in production. File requires API server restart to revoke. No audit trail beyond bearer token appearance in logs.</td>
+  </tr>
+  <tr>
+    <td><code>Bootstrap Tokens</code></td><td>Node join process</td>
+    <td>Time-limited tokens (format <code>abcdef.0123456789abcdef</code>) used only during the node bootstrap process (<code>kubeadm join</code>). Once the node is joined and has its own client cert, the bootstrap token is no longer used. Stored as Secrets in <code>kube-system</code>.</td>
+    <td style="color:var(--green)">Short-lived by design. Auto-deleted after expiry.</td>
+    <td>Delete used bootstrap tokens immediately. Leaked bootstrap tokens let an attacker register a rogue node into the cluster, which then receives pod specs and secrets.</td>
+  </tr>
+  <tr>
+    <td><code>Webhook Token Auth</code></td><td>Custom integrations</td>
+    <td>The API server calls an external HTTP endpoint with the bearer token. The webhook responds with a <code>TokenReview</code> object indicating success/failure and the authenticated user identity. Used to integrate with custom auth systems or legacy token stores.</td>
+    <td>Depends on the external system.</td>
+    <td>Adds latency on every API request. The external webhook becomes a critical availability dependency. Ensure it's HA and has circuit-breaking on the API server side.</td>
+  </tr>
+  <tr>
+    <td><code>Anonymous</code></td><td>Unauthenticated requests</td>
+    <td>Requests with no credentials are assigned username <code>system:anonymous</code> and group <code>system:unauthenticated</code>. Enabled by default but has no RBAC rights unless explicitly granted. Some health-check endpoints (<code>/healthz</code>, <code>/readyz</code>) are exempt from auth.</td>
+    <td>N/A</td>
+    <td>Disable with <code>--anonymous-auth=false</code>. Alert on any audit log entries from <code>system:anonymous</code> — they should not exist in a hardened cluster.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 06 ────────────────── -->
@@ -1229,14 +1408,73 @@ function toggleLayer(name) {
   <span class="comment"># ✗ Never bind cluster-admin to a ServiceAccount</span></pre>
 </div>
 
-<h3>Dangerous RBAC Anti-Patterns</h3>
+<h3>RBAC Object &amp; Verb Reference</h3>
 <div class="table-wrap">
 <table>
-  <tr><th>Anti-Pattern</th><th>Risk</th></tr>
-  <tr><td>Binding <code>cluster-admin</code> to default SA</td><td>Any pod in that namespace = full cluster admin</td></tr>
-  <tr><td>Wildcard verbs <code>["*"]</code></td><td>Includes escalation verbs like <code>create pods/exec</code></td></tr>
-  <tr><td>ClusterRoleBinding when RoleBinding suffices</td><td>Grants permissions across all namespaces</td></tr>
-  <tr><td><code>escalate</code>, <code>bind</code>, <code>impersonate</code> verbs</td><td>Allow self-escalation to higher privileges</td></tr>
+  <tr><th>Object / Concept</th><th>Scope</th><th>What It Does</th><th style="color:var(--red)">Security Notes</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">RBAC OBJECTS</td></tr>
+  <tr>
+    <td><code>Role</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Defines a set of permissions (apiGroups + resources + verbs) within a single namespace. Has no effect outside that namespace. This is almost always what you want — prefer Role over ClusterRole for application workloads.</td>
+    <td>Scope creep: a Role that grows to include <code>secrets/*</code> or <code>*</code> verbs over time. Review Roles on every release. Prefer small, named roles per workload over a shared "app-role".</td>
+  </tr>
+  <tr>
+    <td><code>ClusterRole</code></td><td style="white-space:nowrap">Cluster-wide</td>
+    <td>Same as Role but applies across all namespaces. Also the only way to grant access to cluster-scoped resources (Nodes, PersistentVolumes, Namespaces). Used by built-in roles like <code>cluster-admin</code>, <code>view</code>, <code>edit</code>.</td>
+    <td>Binding a ClusterRole to a subject grants permissions in every namespace, including kube-system. Only create ClusterRoles for platform-level actors (cluster operators, monitoring agents) — never for application SAs.</td>
+  </tr>
+  <tr>
+    <td><code>RoleBinding</code></td><td style="white-space:nowrap">Namespace</td>
+    <td>Attaches a Role (or a ClusterRole) to a subject (User, Group, ServiceAccount) within a namespace. If it references a ClusterRole, the ClusterRole's permissions are scoped down to that namespace only — a useful pattern for reusable role definitions.</td>
+    <td>Verify the subject is exactly right — a typo in a ServiceAccount name silently grants to the wrong identity. Audit with <code>kubectl get rolebindings -A -o wide</code> regularly.</td>
+  </tr>
+  <tr>
+    <td><code>ClusterRoleBinding</code></td><td style="white-space:nowrap">Cluster-wide</td>
+    <td>Attaches a ClusterRole to a subject cluster-wide. Every namespace, every resource. Needed for cluster-admin users and cluster-level controllers. Very rarely needed for application workloads.</td>
+    <td>High blast radius. Audit all ClusterRoleBindings — there should be very few, and none should reference application SAs or the <code>default</code> SA. Alert on new ClusterRoleBinding creation in production.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">VERBS — what operations are allowed</td></tr>
+  <tr>
+    <td><code>get, list, watch</code></td><td style="white-space:nowrap">Read</td>
+    <td><code>get</code> = fetch one resource by name. <code>list</code> = fetch all resources of a type. <code>watch</code> = open a streaming connection to receive change events. Read-only but not harmless — <code>list secrets</code> returns all secret values in a namespace.</td>
+    <td>Never grant <code>list</code> or <code>watch</code> on Secrets to workloads — they only need <code>get</code> on specific named Secrets. <code>watch</code> on pods leaks information about workload churn and scheduling patterns.</td>
+  </tr>
+  <tr>
+    <td><code>create, update, patch, delete</code></td><td style="white-space:nowrap">Write</td>
+    <td>Modify resources. <code>patch</code> is a partial update (JSON merge patch or strategic merge). <code>delete</code> removes the resource. These verbs on sensitive resources (Pods, Secrets, RoleBindings) are high-risk.</td>
+    <td><code>create pods</code> = run arbitrary workloads. <code>patch deployments</code> = swap container images. <code>delete networkpolicies</code> = remove all network segmentation. Audit these verbs carefully.</td>
+  </tr>
+  <tr>
+    <td><code>escalate</code></td><td style="white-space:nowrap">Dangerous</td>
+    <td>Allows creating a RoleBinding that grants permissions the subject doesn't already have — effectively bypassing the "you can only grant what you have" safety rule. Without this verb, creating a RoleBinding is still subject to privilege escalation checks.</td>
+    <td style="color:var(--red)">Never grant. Any subject with <code>escalate</code> can grant themselves cluster-admin in one step. This verb exists only for bootstrapping purposes.</td>
+  </tr>
+  <tr>
+    <td><code>bind</code></td><td style="white-space:nowrap">Dangerous</td>
+    <td>Allows creating RoleBindings or ClusterRoleBindings that reference a specific Role. A subject with <code>bind</code> on a Role can attach that Role to any other subject, including themselves.</td>
+    <td style="color:var(--red)">Privilege escalation path. If you have <code>bind</code> on cluster-admin ClusterRole, you can bind it to yourself. Alert on any use of this verb.</td>
+  </tr>
+  <tr>
+    <td><code>impersonate</code></td><td style="white-space:nowrap">Dangerous</td>
+    <td>Allows sending requests as a different user, group, or ServiceAccount using the <code>Impersonate-User</code> header. Legitimate use: operators acting as another user for debugging. The API server records the impersonated identity in audit logs.</td>
+    <td style="color:var(--red)">A subject with impersonate can act as any user including cluster-admin, bypassing their own RBAC. Restrict to specific trusted operator SAs only. Alert on any impersonation in audit logs.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">DANGEROUS ANTI-PATTERNS</td></tr>
+  <tr>
+    <td>Wildcard <code>["*"]</code> verbs or resources</td><td>—</td>
+    <td>Granting all verbs on all resources. Often seen in dev clusters "just to get things working." Includes dangerous verbs (escalate, bind, impersonate) even if you didn't intend to.</td>
+    <td style="color:var(--red)">Any pod or user with wildcard perms = effective cluster-admin. Scan for wildcards with <code>kubectl get clusterroles -o yaml | grep '"*"'</code>.</td>
+  </tr>
+  <tr>
+    <td>Binding <code>cluster-admin</code> to a ServiceAccount</td><td>—</td>
+    <td>Giving a pod the cluster-admin ClusterRole. Common in CI/CD pipelines and Helm deployments that ask for broad permissions. One compromised pod = full cluster takeover.</td>
+    <td style="color:var(--red)">The single most dangerous RBAC mistake. Audit all bindings that reference cluster-admin. CI/CD should use scoped, short-lived tokens instead.</td>
+  </tr>
+  <tr>
+    <td>ClusterRoleBinding where RoleBinding suffices</td><td>—</td>
+    <td>Using cluster-scoped binding when the workload only needs access in one namespace. Often done out of convenience ("it works") without realising the blast radius.</td>
+    <td>Violates least-privilege. If the SA or user is compromised, they have access to every namespace including kube-system. Always prefer RoleBinding + Role within the target namespace.</td>
+  </tr>
 </table>
 </div>
 </section>
@@ -1296,6 +1534,76 @@ function toggleLayer(name) {
 <div class="callout tip">
   <span class="icon">✓</span>
   <span class="callout-text"><strong>Golden rule:</strong> Non-root, drop ALL capabilities, read-only root filesystem, RuntimeDefault seccomp, no privilege escalation. Start here and only loosen if the workload genuinely breaks.</span>
+</div>
+
+<h3>securityContext Field Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Field</th><th>Level</th><th>What It Does</th><th style="color:var(--red)">Risk If Not Set</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">POD-LEVEL securityContext — applies to all containers in the pod</td></tr>
+  <tr>
+    <td><code>runAsNonRoot: true</code></td><td>Pod</td>
+    <td>Prevents any container in the pod from running as UID 0 (root). The container runtime refuses to start if the image's default user is root and no override is set. Forces images to be built with non-root users.</td>
+    <td>A root process inside a container that escapes via a kernel vulnerability has immediate root on the node. Non-root doesn't prevent escape but massively reduces post-escape impact.</td>
+  </tr>
+  <tr>
+    <td><code>runAsUser / runAsGroup</code></td><td>Pod</td>
+    <td>Sets the specific UID/GID the container process runs as. Overrides whatever the Dockerfile specifies. <code>fsGroup</code> sets the GID that owns mounted volumes — needed so the process can actually read its own secrets.</td>
+    <td>Without explicit UID setting, you rely on the image Dockerfile to have set a non-root user. Many official images still default to root — always set this explicitly.</td>
+  </tr>
+  <tr>
+    <td><code>seccompProfile</code></td><td>Pod / Container</td>
+    <td>Restricts which Linux syscalls the container can make using a seccomp filter. <code>RuntimeDefault</code> uses the container runtime's built-in allowlist (blocks ~300 dangerous syscalls). A custom profile can be even tighter. Blocks syscalls like <code>ptrace</code>, <code>perf_event_open</code>, and kernel module loading.</td>
+    <td>Without seccomp, a container can call any syscall the kernel supports. Kernel exploits like Dirty COW and related container escape techniques rely on syscalls that seccomp blocks. RuntimeDefault stops the majority of known container escape techniques.</td>
+  </tr>
+  <tr>
+    <td><code>sysctls</code></td><td>Pod</td>
+    <td>Allows setting kernel parameters (namespaced sysctls only) per pod. Used for tuning network buffers, TCP settings etc. Unsafe sysctls (non-namespaced ones) require explicit allowlisting on the node and affect the whole host.</td>
+    <td>Unsafe sysctls can destabilize the host kernel or weaken security parameters cluster-wide. Block with OPA/Kyverno policy — only allow safe namespaced sysctls in the approved list.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CONTAINER-LEVEL securityContext — applies to one container</td></tr>
+  <tr>
+    <td><code>allowPrivilegeEscalation: false</code></td><td>Container</td>
+    <td>Sets the <code>no_new_privs</code> flag on the container process. Prevents the process from gaining more privileges than it started with — even via setuid binaries or sudo. This is one of the most important flags to set.</td>
+    <td>Without this, a process running as UID 1000 can execute a setuid binary (like <code>su</code> or <code>sudo</code>) and escalate to root inside the container. Baseline PSS profile requires this.</td>
+  </tr>
+  <tr>
+    <td><code>readOnlyRootFilesystem: true</code></td><td>Container</td>
+    <td>Mounts the container's root filesystem as read-only. The process cannot write to <code>/</code>, <code>/tmp</code>, <code>/var</code>, etc. Writable directories must be explicitly declared as <code>emptyDir</code> volume mounts.</td>
+    <td>Without this, a compromised container can write malware, modify binaries, or create cron jobs at the filesystem level. Read-only root forces attackers to work entirely in memory — much harder and leaves no persistence.</td>
+  </tr>
+  <tr>
+    <td><code>capabilities.drop: ["ALL"]</code></td><td>Container</td>
+    <td>Drops all Linux capabilities. By default containers retain a subset of capabilities including <code>NET_RAW</code> (raw sockets), <code>SYS_CHROOT</code>, <code>AUDIT_WRITE</code> etc. Dropping all removes every privilege the kernel would otherwise grant.</td>
+    <td><code>NET_RAW</code> alone enables ARP spoofing and ICMP-based attacks. <code>SYS_ADMIN</code> (in privileged containers) enables kernel module loading = game over. Drop all, then add back only what's genuinely needed (e.g. <code>NET_BIND_SERVICE</code> to bind port &lt;1024).</td>
+  </tr>
+  <tr>
+    <td><code>privileged: true</code></td><td>Container</td>
+    <td>Gives the container essentially all capabilities and disables most security boundaries — equivalent to running as root on the host. The container can see and modify host devices, mount filesystems, and load kernel modules. Only legitimate use: very low-level system daemons (the CNI plugin itself, for example).</td>
+    <td style="color:var(--red)">Container escape is trivial. <code>privileged: true</code> = immediate full node compromise. Block with PSA Restricted profile and OPA policy. Alert on any privileged pod creation in audit logs.</td>
+  </tr>
+  <tr>
+    <td><code>hostPID / hostIPC / hostNetwork</code></td><td>Pod</td>
+    <td><code>hostPID</code>: pod sees all processes on the node. <code>hostIPC</code>: can access shared memory of node processes. <code>hostNetwork</code>: pod uses the node's network stack directly (can reach kubelet API at localhost:10250, bypass NetworkPolicy).</td>
+    <td style="color:var(--red)">All three are serious escape vectors. <code>hostNetwork</code> bypasses all NetworkPolicies and can reach the kubelet API. <code>hostPID</code> lets the container inspect and signal host processes. Block all three in PSA Baseline and above.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">POD SECURITY ADMISSION (PSA) PROFILES</td></tr>
+  <tr>
+    <td><code>Privileged</code></td><td>Profile</td>
+    <td>No restrictions at all. Allows all securityContext settings including <code>privileged: true</code>, host namespaces, and any capabilities. Used only for system-level DaemonSets that genuinely need host access (Cilium, Falco node agents).</td>
+    <td>Only apply to <code>kube-system</code> or dedicated system namespaces. Label: <code>pod-security.kubernetes.io/enforce: privileged</code>.</td>
+  </tr>
+  <tr>
+    <td><code>Baseline</code></td><td>Profile</td>
+    <td>Prevents the most obvious container escape techniques. Blocks privileged mode, host namespaces, dangerous capabilities (SYS_ADMIN, NET_ADMIN etc.), and HostPath volumes. Does not require non-root or read-only filesystem.</td>
+    <td>Good minimum for any workload. Assign to application namespaces as a floor. Label: <code>pod-security.kubernetes.io/enforce: baseline</code>.</td>
+  </tr>
+  <tr>
+    <td><code>Restricted</code></td><td>Profile</td>
+    <td>Full hardening. Requires non-root, drops all capabilities, requires read-only root filesystem or explicit volume mounts, requires seccomp RuntimeDefault or stricter, blocks all host namespaces. The most secure workload posture K8s natively supports.</td>
+    <td>Target profile for all new workloads. Some legacy apps break (Tomcat writing to <code>/work</code>, JVM temp files) — solve with <code>emptyDir</code> volume mounts rather than relaxing the profile. Label: <code>pod-security.kubernetes.io/enforce: restricted</code>.</td>
+  </tr>
+</table>
 </div>
 </section>
 
@@ -1548,6 +1856,57 @@ function toggleLayer(name) {
     <p>Mounted secrets auto-rotate via kubelet. Env vars are baked in at pod start and visible in <code>/proc/1/environ</code>.</p>
   </div>
 </div>
+
+<h3>Secrets Approach Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Approach</th><th>What It Does</th><th>Pros</th><th style="color:var(--red)">Cons / Risks</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">STORAGE APPROACHES</td></tr>
+  <tr>
+    <td>Native K8s Secret (default)</td>
+    <td>Stores base64-encoded values in etcd. Mounted as files in <code>/var/run/secrets/</code> or injected as env vars. Simple, built-in, no extra tooling.</td>
+    <td>Zero setup. Works everywhere. Rotates automatically when mounted as a volume.</td>
+    <td>Base64 is not encryption. Anyone with etcd access sees plaintext. Anyone with <code>get secrets</code> RBAC sees all values. Values visible in cluster backups.</td>
+  </tr>
+  <tr>
+    <td>K8s Secret + EncryptionConfiguration</td>
+    <td>API server encrypts secrets before writing to etcd using AES-CBC (local key) or a KMS provider (AWS KMS, GCP KMS, Azure Key Vault). Key material is outside etcd.</td>
+    <td>Protects against etcd backup exposure. Transparent to applications. Meets many compliance requirements.</td>
+    <td>With local key: key is still on the API server node. KMS provider adds a cloud dependency and latency. Doesn't protect against RBAC abuse — API server still decrypts on read.</td>
+  </tr>
+  <tr>
+    <td>External Secrets Operator (ESO)</td>
+    <td>An operator that syncs secrets from external stores (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) into K8s Secrets automatically. You define an <code>ExternalSecret</code> CRD that says where to pull from.</td>
+    <td>Single source of truth in external store. Auto-rotation. Works with existing secret management workflows. Secrets never manually handled by developers.</td>
+    <td>Synced secrets still land in etcd as K8s Secrets — combine with EncryptionConfiguration. ESO SA needs cloud IAM permissions — protect carefully.</td>
+  </tr>
+  <tr>
+    <td>Secrets Store CSI Driver</td>
+    <td>Mounts secrets directly from an external provider (Vault, AWS SSM, etc.) as ephemeral volumes into the pod at runtime. Secrets never touch etcd. Rotates automatically during the pod's lifetime.</td>
+    <td>Secrets never in etcd. Rotation is live. Works with Vault, AWS SSM, Azure Key Vault, GCP. Supports syncing to K8s Secret for env var use.</td>
+    <td>Adds a node-level DaemonSet. More complex to set up than ESO. Pod startup latency if the external store is slow or unavailable.</td>
+  </tr>
+  <tr>
+    <td>HashiCorp Vault + Agent Injector</td>
+    <td>Vault agent runs as a sidecar or init container, authenticates to Vault using the pod's SA token (Vault K8s auth method), fetches secrets, and writes them to a shared in-memory volume. Supports dynamic secrets (Vault generates DB credentials per pod, auto-expires them).</td>
+    <td>Dynamic secrets with TTLs. Vault audit log. Rich policy engine. No secrets in K8s at all. Industry standard for large orgs.</td>
+    <td>Vault is another HA system to operate. The sidecar adds latency and resource overhead. Vault outage = pod startup failure unless secrets are cached.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">INJECTION APPROACHES</td></tr>
+  <tr>
+    <td>Volume mount (file)</td>
+    <td>Secret is written as a file in a tmpfs (in-memory) directory. The app reads the file. Kubelet watches for Secret changes and updates the file automatically — rotation without pod restart.</td>
+    <td>Auto-rotation. Not visible in <code>/proc/PID/environ</code>. Can set file permissions. Best injection method.</td>
+    <td>App must support reading secrets from files (most do). Requires code change if app currently reads from env vars.</td>
+  </tr>
+  <tr>
+    <td>Environment variable</td>
+    <td>Secret value is injected as an env var at pod start via <code>valueFrom.secretKeyRef</code>. The value is baked in at container startup — no rotation without a pod restart.</td>
+    <td>Easiest for apps — no code change if app already reads env vars. Works with legacy apps.</td>
+    <td>Visible in <code>/proc/1/environ</code> by any process in the container. Captured in crash dumps, debug tools, and some logging frameworks. Does not rotate — stale value until pod restarts.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 10 ────────────────── -->
@@ -1582,6 +1941,61 @@ function toggleLayer(name) {
   <li>Enforce <strong>allowlisted registries</strong> via OPA/Gatekeeper or Kyverno</li>
   <li>Generate and attest <strong>SBOMs</strong> (Software Bill of Materials) for each build</li>
 </ul>
+
+<h3>Supply Chain Tool Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Tool / Concept</th><th>Category</th><th>What It Does</th><th style="color:var(--red)">Security Value</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">IMAGE HARDENING</td></tr>
+  <tr>
+    <td>Digest pinning</td><td>Image ref</td>
+    <td>Reference images by their SHA-256 content digest instead of a mutable tag. <code>image: nginx:1.25</code> can change — the registry owner can push a new image to that tag. <code>image: nginx@sha256:abc123...</code> is immutable — it will always pull exactly that byte-for-byte image.</td>
+    <td>Eliminates tag hijacking and supply chain substitution attacks. The only way to change what runs is to change the manifest and go through CI.</td>
+  </tr>
+  <tr>
+    <td>Distroless images</td><td>Base image</td>
+    <td>Container images that contain only the application and its runtime dependencies — no shell, no package manager, no curl, no busybox. Google's distroless images are the most common. A distroless Java image has the JRE and your JAR — nothing else.</td>
+    <td>Dramatically shrinks attack surface. No shell = attacker cannot run commands after gaining code execution inside the container. No package manager = cannot install tools. Reduces CVE count from hundreds to tens.</td>
+  </tr>
+  <tr>
+    <td>Multi-stage builds</td><td>Dockerfile</td>
+    <td>Build your application in a fat "builder" image (with compilers, build tools, dev dependencies), then copy only the compiled output into a minimal runtime image. The final image never contains build tooling.</td>
+    <td>Keeps build secrets (e.g. private npm tokens) out of the final image. Shrinks image size. Removes compilers that could be used for on-container compilation of exploit tools.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">SCANNING &amp; SIGNING</td></tr>
+  <tr>
+    <td>Trivy</td><td>Scanner</td>
+    <td>Open-source vulnerability scanner by Aqua Security. Scans container images, filesystems, Git repos, Kubernetes manifests, Helm charts, and Terraform. Checks against CVE databases (NVD, GitHub Advisories, OS-specific). Also detects misconfigurations in K8s YAML and detects secrets accidentally baked into images.</td>
+    <td>Fast, comprehensive, free. Integrate in CI (<code>trivy image --exit-code 1</code>) to block builds with critical CVEs. Also run against already-deployed images continuously — new CVEs emerge after images are built.</td>
+  </tr>
+  <tr>
+    <td>Grype / Syft</td><td>Scanner / SBOM</td>
+    <td>Grype is Anchore's vulnerability scanner. Syft generates SBOMs (Software Bill of Materials) — a machine-readable inventory of every package inside a container image. Syft output feeds into Grype for vulnerability matching, or into a central SBOM store for supply chain auditing.</td>
+    <td>SBOMs let you answer "which of our deployed images contains log4j?" in seconds during an incident. Increasingly mandated by regulations (US EO 14028, EU CRA).</td>
+  </tr>
+  <tr>
+    <td>cosign (Sigstore)</td><td>Image signing</td>
+    <td>Signs container images and stores the signature in the same OCI registry as the image. Uses either keyless signing (Sigstore's transparency log + OIDC identity) or a traditional key pair. Signatures are verifiable by anyone with the public key or via the transparency log.</td>
+    <td>Proves an image came from your CI pipeline and hasn't been tampered with. At admission time, a policy engine (Kyverno, Gatekeeper) verifies the signature — unsigned images are rejected before they ever run.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">ADMISSION CONTROL (policy at deploy time)</td></tr>
+  <tr>
+    <td>OPA / Gatekeeper</td><td>Policy engine</td>
+    <td>Open Policy Agent is a general-purpose policy engine. Gatekeeper is its K8s admission webhook integration. You write policies in Rego (OPA's DSL) that run against every resource create/update request before it reaches etcd. Examples: "reject images not from registry.company.com", "require all pods to have resource limits", "deny privileged containers".</td>
+    <td>Policy-as-code enforced at admission — misconfigured resources never make it into the cluster. Policies live in Git, versioned, reviewed. The gold standard for K8s policy enforcement in large orgs.</td>
+  </tr>
+  <tr>
+    <td>Kyverno</td><td>Policy engine</td>
+    <td>A K8s-native policy engine (no separate DSL — policies are YAML). Runs as an admission webhook. Can validate (reject bad configs), mutate (auto-add labels, defaults), and generate (auto-create NetworkPolicies for new namespaces). Easier learning curve than OPA/Rego.</td>
+    <td>Lower barrier to adoption than OPA. Good for teams that don't want to learn Rego. Policies are readable by anyone who knows YAML. Actively maintained CNCF project.</td>
+  </tr>
+  <tr>
+    <td>Admission webhooks</td><td>K8s mechanism</td>
+    <td>The API server can call external HTTP services (webhooks) at two points: <strong>MutatingAdmissionWebhook</strong> (can modify the incoming object before it's persisted) and <strong>ValidatingAdmissionWebhook</strong> (can allow or deny the request). OPA/Kyverno/image verifiers all implement these webhooks.</td>
+    <td>The enforcement point for all policy-as-code tools. Critical availability dependency — a broken or unavailable webhook can block all deployments. Always run webhooks in HA and set appropriate <code>failurePolicy</code> (Fail vs Ignore).</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 11 ────────────────── -->
@@ -1621,6 +2035,70 @@ function toggleLayer(name) {
   <li>403 / 401 spikes (brute force or credential stuffing)</li>
   <li>Pod creation in <code>kube-system</code> not by known controllers</li>
 </ul>
+
+<h3>Audit Log Field &amp; Alert Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Field / Event</th><th>Where in Log</th><th>What It Means</th><th style="color:var(--red)">Alert Condition</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">KEY AUDIT LOG FIELDS</td></tr>
+  <tr>
+    <td><code>user.username</code></td><td>Every event</td>
+    <td>The authenticated identity — could be a human user, a ServiceAccount (<code>system:serviceaccount:namespace:name</code>), or a system component (<code>system:node:nodename</code>).</td>
+    <td>Alert on <code>system:anonymous</code> or <code>system:unauthenticated</code> — these should never appear in a hardened cluster. Alert on unexpected usernames performing sensitive verbs.</td>
+  </tr>
+  <tr>
+    <td><code>verb</code></td><td>Every event</td>
+    <td>The operation attempted: <code>get</code>, <code>list</code>, <code>watch</code>, <code>create</code>, <code>update</code>, <code>patch</code>, <code>delete</code>, <code>deletecollection</code>. Also special subresource verbs: <code>exec</code>, <code>portforward</code>, <code>proxy</code>.</td>
+    <td>Alert on <code>exec</code>, <code>portforward</code>, <code>proxy</code> from non-operator users. Alert on <code>delete</code> of NetworkPolicies, RBAC objects, or audit configurations.</td>
+  </tr>
+  <tr>
+    <td><code>objectRef.resource</code></td><td>Every event</td>
+    <td>The type of K8s object being acted on: <code>secrets</code>, <code>pods</code>, <code>clusterrolebindings</code>, <code>nodes</code>, etc. Combined with <code>verb</code> gives the full action picture.</td>
+    <td>Alert on any <code>verb: create/update/delete</code> on <code>clusterrolebindings</code>, <code>rolebindings</code>, <code>roles</code>, <code>clusterroles</code> — RBAC changes are high-value attacker moves.</td>
+  </tr>
+  <tr>
+    <td><code>responseStatus.code</code></td><td>ResponseComplete stage</td>
+    <td>HTTP response code: 200 (success), 201 (created), 401 (unauthenticated), 403 (forbidden), 404 (not found). A spike in 401/403 indicates brute force or a credential that lost access.</td>
+    <td>Alert on sustained 401/403 spike from a single user or IP — credential stuffing or recon. Alert on 403 from a ServiceAccount that previously had access — may indicate RBAC misconfiguration or credential revocation.</td>
+  </tr>
+  <tr>
+    <td><code>requestURI</code></td><td>Every event</td>
+    <td>The raw API path: <code>/api/v1/namespaces/payments/secrets/db-password</code>. Shows exactly which object was accessed. Essential for forensics to determine what an attacker read or modified.</td>
+    <td>Alert on access to secrets named <code>*-password</code>, <code>*-token</code>, <code>*-key</code> by unexpected principals. Alert on access to secrets in <code>kube-system</code> by non-system actors.</td>
+  </tr>
+  <tr>
+    <td><code>sourceIPs</code></td><td>Every event</td>
+    <td>Client IP of the request. For <code>kubectl</code> calls this is the operator's workstation or bastion IP. For pod SA token calls this is the pod's IP. Unexpected source IPs for privileged operations are a strong signal of compromise.</td>
+    <td>Alert on cluster-admin level operations from IPs outside your known bastion/VPN range. Alert on SA token usage from IPs that don't match the expected pod CIDR.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">HIGH-PRIORITY ALERT RULES</td></tr>
+  <tr>
+    <td>exec into pod</td><td>pods/exec create</td>
+    <td>Someone ran <code>kubectl exec</code> to get a shell inside a container. Legitimate in development, almost never legitimate in production.</td>
+    <td style="color:var(--red)">Alert on all <code>create pods/exec</code> in production namespaces. Page immediately if the subject is not an approved operator account.</td>
+  </tr>
+  <tr>
+    <td>RBAC object mutation</td><td>clusterrolebindings, rolebindings create/update</td>
+    <td>A new binding or role was created or changed. This is the most direct path to privilege escalation — attackers create a ClusterRoleBinding to grant themselves cluster-admin.</td>
+    <td style="color:var(--red)">Alert on any RBAC create/update/delete not performed by the cluster's known CI/CD service account or operators. This is a tier-1 incident signal.</td>
+  </tr>
+  <tr>
+    <td>Secret bulk read</td><td>secrets list/watch</td>
+    <td>A principal issued a <code>list</code> or <code>watch</code> on secrets — this returns all secret values in a namespace, not just one. Legitimate for secret-management tools, almost never for application pods.</td>
+    <td>Alert on <code>list secrets</code> or <code>watch secrets</code> from any pod ServiceAccount. Application pods should only need <code>get</code> on specific named secrets.</td>
+  </tr>
+  <tr>
+    <td>Node/pod deletion spike</td><td>nodes/pods delete</td>
+    <td>A burst of delete operations on pods or nodes — could be a buggy operator, a misconfigured HPA, or an attacker trying to disrupt workloads or cover their tracks.</td>
+    <td>Alert on more than N pod deletions per minute from a single principal if that principal is not a known autoscaler or cluster-maintenance account.</td>
+  </tr>
+  <tr>
+    <td>kube-system pod creation</td><td>pods create in kube-system</td>
+    <td>A new pod was created in the kube-system namespace. This namespace should only contain known cluster components, managed by their respective controllers.</td>
+    <td style="color:var(--red)">Alert on any pod creation in kube-system not by a known system controller. Attackers place backdoor pods here because kube-system is rarely monitored and often has relaxed NetworkPolicies.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 12 ────────────────── -->
@@ -1666,6 +2144,50 @@ function toggleLayer(name) {
     <div class="card-label p">Cilium</div>
     <p>eBPF-based — no sidecar. Combines CNI + NetworkPolicy + mTLS + observability. Rising standard for security-focused clusters.</p>
   </div>
+</div>
+
+<h3>Service Mesh &amp; mTLS Concept Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Concept / Tool</th><th>What It Is</th><th>Security Capability</th><th style="color:var(--red)">Risk If Absent</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CORE CONCEPTS</td></tr>
+  <tr>
+    <td>mTLS (mutual TLS)</td><td>Protocol</td>
+    <td>Both sides of a connection present X.509 certificates and verify each other. Unlike standard TLS (where only the server proves identity), mTLS also proves the client's identity cryptographically. Inside K8s, each workload gets a SPIFFE/SVID identity certificate encoding its ServiceAccount and namespace.</td>
+    <td>Without mTLS, any pod can impersonate any other pod — just send HTTP traffic to its IP. NetworkPolicy restricts which pods can talk, but not whether one pod can impersonate another once they're allowed to talk.</td>
+  </tr>
+  <tr>
+    <td>SPIFFE / SVID</td><td>Identity standard</td>
+    <td>SPIFFE (Secure Production Identity Framework for Everyone) is an open standard for workload identity. An SVID (SPIFFE Verifiable Identity Document) is the certificate that proves a workload's identity — encoded as a URI: <code>spiffe://cluster.local/ns/payments/sa/api</code>. Istio, Linkerd, and Cilium all issue SPIFFE-compatible SVIDs.</td>
+    <td>Without workload identity, your only identity primitive is IP address — trivially spoofable in a flat network. SPIFFE binds identity to the cryptographic certificate, not the network location.</td>
+  </tr>
+  <tr>
+    <td>Envoy sidecar</td><td>Proxy</td>
+    <td>A high-performance L4/L7 proxy injected as a sidecar container into every pod by the mesh's MutatingAdmissionWebhook. Intercepts all inbound and outbound traffic transparently (via iptables rules in an init container). The app thinks it's talking directly — it doesn't know Envoy exists. Handles mTLS termination, retries, circuit breaking, metrics, tracing.</td>
+    <td>The sidecar adds ~5-10ms latency and 50-100MB memory overhead per pod. A bug in Envoy affects all pods. The init container requires privilege at pod startup — the trade-off for zero-code-change adoption.</td>
+  </tr>
+  <tr>
+    <td>AuthorizationPolicy (Istio)</td><td>L7 policy</td>
+    <td>Istio-specific CRD that lets you write access control rules at L7 — not just "can pod A reach pod B" but "can pod A reach pod B on path <code>/admin/*</code> with method POST and a valid JWT with claim role=admin". Far more granular than K8s NetworkPolicy which operates at L3/L4 only.</td>
+    <td>Without L7 policy, NetworkPolicy only controls which pods talk — not what requests they make. An attacker who can reach the API pod can hit any endpoint including admin ones.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">MESH IMPLEMENTATIONS</td></tr>
+  <tr>
+    <td>Istio</td><td>Service mesh</td>
+    <td>The most feature-complete mesh. Control plane components: Istiod (cert management, config distribution, service discovery). Data plane: Envoy sidecars. Features: mTLS, AuthorizationPolicy (L7 RBAC), JWT validation, traffic shaping, retries, circuit breaking, distributed tracing, Kiali dashboard.</td>
+    <td>Heavy — Istiod adds significant control plane resource usage. The learning curve for AuthorizationPolicy is steep. A misconfigured policy can silently allow or deny traffic. Run in permissive mode first, then enforce.</td>
+  </tr>
+  <tr>
+    <td>Linkerd</td><td>Service mesh</td>
+    <td>Lightweight, Rust-based data plane (microproxy instead of full Envoy). Zero-config automatic mTLS between all meshed pods. Simpler operational model than Istio. Policy is less granular — L4 (pod-to-pod) rather than L7 (per-path/method). Excellent latency overhead (sub-millisecond). CNCF graduated project.</td>
+    <td>Less L7 policy capability than Istio — if you need per-path or per-header access control, Linkerd may not suffice. Smaller community than Istio. The Rust proxy reduces the CVE surface area but has a different (smaller) ecosystem.</td>
+  </tr>
+  <tr>
+    <td>Cilium (eBPF mesh)</td><td>CNI + mesh</td>
+    <td>Uses eBPF (extended Berkeley Packet Filter) to implement networking and security at the Linux kernel level — no sidecar proxy required. Combines CNI (pod networking), NetworkPolicy (L3/L4), mTLS via WireGuard, and Hubble (real-time flow observability). Growing rapidly as the preferred approach for new clusters.</td>
+    <td>eBPF requires a relatively modern kernel (5.10+). Less mature than Istio for L7 policy. Hubble is powerful but requires setup. The eBPF programs run in the kernel — a Cilium bug can affect the entire node, not just one pod.</td>
+  </tr>
+</table>
 </div>
 </section>
 
@@ -1746,6 +2268,72 @@ function toggleLayer(name) {
   <span class="icon">🔑</span>
   <span class="callout-text"><strong>MITRE ATT&CK for Containers</strong> and the <strong>Microsoft Threat Matrix for Kubernetes</strong> are structured references that map these techniques. Use them for threat modeling engagements and red team scenarios.</span>
 </div>
+
+<h3>Attack Technique Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Technique</th><th>MITRE Phase</th><th>How It Works</th><th style="color:var(--green)">Detection / Control</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">INITIAL ACCESS</td></tr>
+  <tr>
+    <td>Exposed Kubernetes Dashboard</td><td>Initial Access</td>
+    <td>The K8s Dashboard (a web UI) was historically deployed with cluster-admin access and no auth by default. Exposed to the internet, it allowed full cluster control via a browser. Still seen in misconfigured clusters — the Tesla cryptomining incident (2018) used this exact vector.</td>
+    <td>Remove the dashboard from production or require SSO. Never give it cluster-admin SA. Network-restrict to internal IPs only. Detect with port scans on :8001, :30000-32767 range.</td>
+  </tr>
+  <tr>
+    <td>Open kubelet API (:10250)</td><td>Initial Access</td>
+    <td>The kubelet exposes an authenticated API on port 10250. If anonymous auth is enabled (<code>--anonymous-auth=true</code>) or the port is internet-exposed, an attacker can list pods, read logs, and exec commands into any container on that node without credentials.</td>
+    <td>Firewall :10250 to control plane only. Set <code>--anonymous-auth=false</code> on kubelet. Detect with audit logs: kubelet API calls from unexpected source IPs. Falco rule: kubelet API access from non-control-plane IP.</td>
+  </tr>
+  <tr>
+    <td>SSRF → Cloud Metadata API</td><td>Initial Access / Credential Access</td>
+    <td>A Server-Side Request Forgery vulnerability in a pod's application lets an attacker make the pod fetch <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code> — the cloud instance metadata endpoint. Returns temporary IAM credentials for the node's cloud role. If the node has broad cloud permissions, this is a full cloud account compromise.</td>
+    <td>Block <code>169.254.169.254</code> egress in NetworkPolicy for all pods that don't need cloud metadata access. Use IRSA (IAM Roles for Service Accounts) on EKS to give per-pod cloud credentials instead of node-level credentials.</td>
+  </tr>
+  <tr>
+    <td>Leaked kubeconfig</td><td>Initial Access</td>
+    <td>A <code>kubeconfig</code> file contains cluster credentials (often cluster-admin level client certs or long-lived tokens) and the API server endpoint. Committed to Git, leaked in CI logs, or left in a public S3 bucket. Gives the attacker full <code>kubectl</code> access.</td>
+    <td>Scan Git history with truffleHog or gitleaks. Use short-lived OIDC tokens instead of long-lived client certs. Rotate credentials immediately on suspected leak. Enable audit logs to track what the leaked credential accessed.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">EXECUTION &amp; PERSISTENCE</td></tr>
+  <tr>
+    <td>kubectl exec shell</td><td>Execution</td>
+    <td>The attacker (or an over-permissioned operator) uses <code>kubectl exec -it pod -- /bin/bash</code> to get an interactive shell in a running container. From there they can read mounted secrets, make internal API calls, and explore the cluster network. Requires <code>create pods/exec</code> RBAC permission.</td>
+    <td>Restrict <code>pods/exec</code> verb to specific operator SAs. Alert on all exec events in audit log. Falco rule: shell spawned in container. In production, exec should require explicit approval (breakglass).</td>
+  </tr>
+  <tr>
+    <td>Malicious admission webhook</td><td>Persistence / Execution</td>
+    <td>An attacker with API access creates a MutatingAdmissionWebhook that intercepts every pod creation and injects a malicious sidecar (reverse shell, cryptominer, credential harvester). Survives pod restarts. The webhook itself looks like a legitimate tool. Very hard to detect without auditing webhook configs.</td>
+    <td>Alert on MutatingAdmissionWebhook create/update in audit logs. Regularly audit <code>kubectl get mutatingwebhookconfigurations</code>. Restrict who can create webhooks. OPA policy: only allow webhooks from approved services.</td>
+  </tr>
+  <tr>
+    <td>CronJob persistence</td><td>Persistence</td>
+    <td>Attacker creates a CronJob that runs every minute, spawning a pod that phones home, mines crypto, or exfiltrates data. The CronJob controller (not the attacker) creates the pods — attribution is harder. Easy to miss in a busy cluster.</td>
+    <td>Alert on CronJob creation by non-CI principals. Audit all CronJobs regularly, especially those with high-privilege SAs. Kyverno policy: CronJobs require a specific label proving they were created by the approved pipeline.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">PRIVILEGE ESCALATION</td></tr>
+  <tr>
+    <td>Over-permissive SA token</td><td>Privilege Escalation</td>
+    <td>A compromised pod reads its auto-mounted SA token at <code>/var/run/secrets/kubernetes.io/serviceaccount/token</code> and uses it to call the K8s API. If the SA has broad RBAC (list secrets, create pods, etc.) the attacker pivots from app-level compromise to cluster-level control.</td>
+    <td>Disable SA token automounting (<code>automountServiceAccountToken: false</code>). Create dedicated per-workload SAs with minimal RBAC. Audit SA permissions with <code>kubectl auth can-i --list --as=system:serviceaccount:ns:sa</code>.</td>
+  </tr>
+  <tr>
+    <td>Privileged container escape</td><td>Privilege Escalation</td>
+    <td>A container running with <code>privileged: true</code> or <code>hostPID: true</code> can escape to the host node. With <code>privileged: true</code>: mount the host filesystem (<code>nsenter --mount=/proc/1/ns/mnt -- chroot /host</code>), read all node secrets, install a backdoor. This is a complete node takeover in under 60 seconds.</td>
+    <td>Block privileged containers with PSA Restricted profile and OPA policy. Alert on privileged pod creation immediately in audit logs. Falco rule: container running as privileged. Runtime detection: <code>nsenter</code> or <code>chroot</code> syscall from a container process.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">LATERAL MOVEMENT &amp; EXFILTRATION</td></tr>
+  <tr>
+    <td>Flat network lateral movement</td><td>Lateral Movement</td>
+    <td>Without NetworkPolicy, a compromised frontend pod can directly connect to the postgres database on port 5432, the Vault agent on port 8200, the Prometheus metrics endpoint, or any other pod in the cluster. The attacker scans the pod CIDR range, discovers services via CoreDNS, and pivots to higher-value targets.</td>
+    <td>Default-deny NetworkPolicy in every namespace. mTLS to prevent impersonation even when network access is allowed. Cilium Hubble or Falco network rules to detect unusual connection patterns (frontend pod → postgres direct connection).</td>
+  </tr>
+  <tr>
+    <td>DNS exfiltration</td><td>Exfiltration</td>
+    <td>Even when all TCP/UDP egress is blocked by NetworkPolicy, DNS (port 53) is almost always allowed (pods need it to resolve service names). An attacker encodes data in DNS queries to an attacker-controlled domain: <code>c2.attacker.com → stolen-data-chunk-1.c2.attacker.com</code>. Data exfiltrates as DNS query names, bypassing egress controls.</td>
+    <td>Restrict DNS egress to internal CoreDNS only. Monitor DNS query volume and unusual TXT/NULL record queries. Cilium DNS-aware NetworkPolicy blocks lookups of non-allowlisted domains. Alert on pods querying domains never seen before in that namespace.</td>
+  </tr>
+</table>
+</div>
 </section>
 
 <!-- ────────────────── 14 ────────────────── -->
@@ -1811,6 +2399,67 @@ function toggleLayer(name) {
 <div class="callout tip" style="margin-top:28px">
   <span class="icon">✓</span>
   <span class="callout-text"><strong>Tools to know:</strong> <code>kube-bench</code> (CIS benchmark), <code>kubeaudit</code> (manifest auditing), <code>Trivy</code> (image + IaC scanning), <code>Falco</code> (runtime detection), <code>OPA/Gatekeeper</code> or <code>Kyverno</code> (policy engine), <code>kubescape</code> (NSA/CISA hardening), <code>Tetragon</code> (eBPF observability).</span>
+</div>
+
+<h3>Security Tooling Reference</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Tool</th><th>Category</th><th>What It Does</th><th>When to Use It</th></tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--cyan);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">CLUSTER ASSESSMENT</td></tr>
+  <tr>
+    <td><code>kube-bench</code></td><td>CIS Benchmark</td>
+    <td>Runs the CIS Kubernetes Benchmark checks against your cluster's configuration — API server flags, etcd settings, kubelet config, RBAC defaults. Reports pass/fail/warn per check with remediation steps. Runs as a pod inside the cluster or as a binary on nodes.</td>
+    <td>Run on new cluster setup, after major config changes, and quarterly. Most managed K8s services (EKS, GKE) pass most checks automatically — focus on the node-level and workload checks that they leave to you.</td>
+  </tr>
+  <tr>
+    <td><code>kubescape</code></td><td>Posture scanner</td>
+    <td>Scans cluster and YAML manifests against NSA/CISA K8s Hardening Guide, MITRE ATT&CK for Containers, and other frameworks. Gives a risk score and prioritized remediation list. Can run in CI against manifests before they're deployed, or live against a running cluster.</td>
+    <td>Use in CI to catch misconfigurations before deployment. Use against existing clusters for a full posture baseline. Good complement to kube-bench (kubescape focuses on workload configuration, kube-bench on node/API server config).</td>
+  </tr>
+  <tr>
+    <td><code>kubeaudit</code></td><td>Manifest auditor</td>
+    <td>Audits K8s manifests for security issues: missing securityContext, automounted SA tokens, missing NetworkPolicies, containers running as root, missing resource limits. Runs against YAML files or live cluster. Output is human-readable with remediation suggestions.</td>
+    <td>Shift-left tool — run in CI pipeline on every PR that changes K8s manifests. Catches the most common pod security misconfigurations before they reach the cluster.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">RUNTIME DETECTION</td></tr>
+  <tr>
+    <td><code>Falco</code></td><td>Runtime IDS</td>
+    <td>Uses eBPF or a kernel module to intercept Linux syscalls and match them against a rule engine. Ships with 100+ built-in rules: shell in container, sensitive file read, outbound connection to unexpected IP, container escape attempts, privilege escalation syscalls. Sends alerts to Slack, SIEM, or Falcosidekick aggregator in real time.</td>
+    <td>Always-on in production. The closest thing K8s has to an IDS. Pair with Falcosidekick to route alerts to your SIEM. Tune noisy default rules in the first week — don't turn rules off, tune them to add context (e.g. expected containers that legitimately use /proc).</td>
+  </tr>
+  <tr>
+    <td><code>Tetragon</code></td><td>eBPF observability</td>
+    <td>Cilium's eBPF-based security observability tool. Provides fine-grained kernel-level visibility: process execution, file access, network connections — all correlated with K8s pod identity. Can enforce policies at the kernel level (kill a process on a policy violation) rather than just alerting. No sidecar required.</td>
+    <td>Use when you need deeper observability than Falco provides, or when you want enforcement (not just detection) at the kernel level. Excellent for incident response — reconstruct exactly what a compromised pod did at the syscall level.</td>
+  </tr>
+  <tr>
+    <td><code>Trivy</code></td><td>Vulnerability / config scanner</td>
+    <td>Scans container images, filesystems, Git repos, IaC (Terraform, Helm, K8s YAML) for CVEs and misconfigurations. Also detects secrets accidentally embedded in images. Free, fast, comprehensive CVE database coverage. Can run as a K8s operator to continuously scan running images.</td>
+    <td>In CI: block merges/deploys on critical CVEs. In cluster: run Trivy Operator to continuously scan all running pods and report new vulnerabilities as they're discovered in the NVD. Also scan Helm charts for misconfiguration before install.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">POLICY ENFORCEMENT</td></tr>
+  <tr>
+    <td><code>OPA / Gatekeeper</code></td><td>Policy engine</td>
+    <td>Open Policy Agent is a general-purpose policy engine. Gatekeeper integrates it into K8s as an admission webhook. Policies are written in Rego — a declarative DSL. ConstraintTemplates define the policy logic; Constraints apply them with parameters. Supports audit mode (report violations without blocking) and enforcement mode.</td>
+    <td>When you need complex, cross-resource policies (e.g. "if a pod has label env=prod, it must also have a resource limit and a non-root securityContext"). Better for orgs with dedicated platform teams who can maintain Rego. Audit mode is invaluable — run in audit first to understand the blast radius before enforcing.</td>
+  </tr>
+  <tr>
+    <td><code>Kyverno</code></td><td>Policy engine</td>
+    <td>A K8s-native policy engine with no separate DSL — policies are YAML. Three modes: validate (reject non-compliant resources), mutate (auto-add missing fields like labels or securityContext defaults), and generate (auto-create companion resources like a NetworkPolicy for every new namespace). Easier to adopt than OPA.</td>
+    <td>When you want policy-as-code without learning Rego. Especially powerful for mutation — automatically add <code>readOnlyRootFilesystem: true</code> as a default, so developers don't have to remember. Generate mode is unique — auto-provisioning NetworkPolicies for every new namespace is a game-changer for multi-tenant clusters.</td>
+  </tr>
+  <tr><td colspan="4" style="background:var(--bg-surface);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;padding:8px 14px;">NETWORK OBSERVABILITY</td></tr>
+  <tr>
+    <td><code>Hubble (Cilium)</code></td><td>Network observability</td>
+    <td>Real-time network flow visibility built into Cilium. Shows every connection between pods with full K8s context (pod name, namespace, label, service). CLI: <code>hubble observe --namespace payments</code>. UI: Hubble UI gives a service dependency graph. Helps write NetworkPolicies by showing you exactly what's talking to what before you enforce deny rules.</td>
+    <td>Use before writing NetworkPolicies — observe actual traffic for a week to understand the real communication patterns, then write policies from the observed flow data. Much safer than guessing and breaking things. Also invaluable during incident response.</td>
+  </tr>
+  <tr>
+    <td><code>NetworkPolicy editor</code></td><td>Policy helper</td>
+    <td>Cilium's open-source NetworkPolicy editor at <code>editor.cilium.io</code> — a visual tool for creating NetworkPolicies. You draw the allowed connections graphically and it generates the YAML. Also validates existing policies and explains what they allow/deny in plain English.</td>
+    <td>Use when authoring complex NetworkPolicies. Much less error-prone than hand-writing selector-based YAML. Share generated policies with developers who aren't familiar with K8s networking — the visual representation makes it instantly clear what's allowed.</td>
+  </tr>
+</table>
 </div>
 
 </section>
