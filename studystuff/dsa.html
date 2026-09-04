@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Visual Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,700;1,400&display=swap');
+
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --ink2: #44403c;
+  --ink3: #78716c;
+  --border: #e7e5e4;
+  --teal: #0d9488;
+  --teal-light: #ccfbf1;
+  --indigo: #312e81;
+  --indigo-light: #e0e7ff;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --rose: #e11d48;
+  --rose-light: #ffe4e6;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --code-bg: #1c1917;
+  --code-text: #e7e5e4;
+  --radius: 12px;
+  --shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--ink); line-height:1.72; font-size:15.5px; }
+.wrap { max-width:820px; margin:0 auto; padding:24px 20px 100px; }
+
+/* ── NAV TABS ── */
+.top-nav { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:0 20px; }
+.top-nav-inner { max-width:820px; margin:0 auto; display:flex; gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.top-nav-inner::-webkit-scrollbar { display:none; }
+.tnav {
+  padding:14px 18px; font-size:13.5px; font-weight:600; white-space:nowrap;
+  color:var(--ink3); cursor:pointer; border-bottom:2.5px solid transparent;
+  background:none; border-top:none; border-left:none; border-right:none;
+  font-family:inherit; transition:color .15s;
+}
+.tnav:hover { color:var(--ink); }
+.tnav.active { color:var(--indigo); border-bottom-color:var(--indigo); }
+.page { display:none; } .page.active { display:block; }
+
+/* ── TYPOGRAPHY ── */
+h1 { font-family:'Fraunces',serif; font-size:32px; font-weight:700; letter-spacing:-.5px; line-height:1.2; margin-bottom:8px; color:var(--indigo); }
+h2 { font-family:'Fraunces',serif; font-size:24px; font-weight:700; letter-spacing:-.3px; margin:40px 0 12px; color:var(--ink); }
+h3 { font-size:17px; font-weight:700; margin:28px 0 8px; }
+.subtitle { color:var(--ink3); font-size:15px; margin-bottom:28px; max-width:620px; }
+p { color:var(--ink2); margin-bottom:14px; max-width:68ch; }
+strong { color:var(--ink); }
+
+/* ── CARDS ── */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px 26px; margin:18px 0; box-shadow:var(--shadow); }
+
+/* ── PSEUDO-CODE CARD ── */
+.pseudo {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:0; margin:18px 0; overflow:hidden; box-shadow:var(--shadow);
+}
+.pseudo-header {
+  background:var(--indigo); color:#fff; padding:12px 22px;
+  font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px;
+}
+.pseudo-header .ph-icon { width:20px; height:20px; background:rgba(255,255,255,.2); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; }
+.pseudo-body { padding:18px 22px; }
+.step {
+  display:flex; gap:14px; margin-bottom:14px; align-items:flex-start;
+}
+.step-num {
+  width:28px; height:28px; border-radius:50%; flex-shrink:0;
+  background:var(--indigo-light); color:var(--indigo);
+  font-size:13px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  margin-top:1px;
+}
+.step-text { color:var(--ink2); font-size:14.5px; line-height:1.65; }
+.step-text em { color:var(--teal); font-style:normal; font-weight:600; }
+.step-indent { padding-left:42px; margin-bottom:14px; }
+.step-detail {
+  background:var(--teal-light); border-radius:8px; padding:10px 14px;
+  font-size:13px; color:var(--teal); margin-top:6px; line-height:1.6;
+}
+
+/* ── VISUALIZATIONS ── */
+.viz {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; margin:18px 0; box-shadow:var(--shadow); overflow-x:auto;
+}
+.viz-title { font-size:13px; font-weight:700; color:var(--ink3); margin-bottom:14px; }
+.viz-row { display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.viz-label { width:100px; font-size:12px; font-weight:600; color:var(--ink3); flex-shrink:0; }
+.cell {
+  width:44px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:700; border:2px solid var(--border); background:var(--surface);
+  transition:all .3s ease; flex-shrink:0;
+}
+.cell.active { background:var(--amber-light); border-color:var(--amber); color:var(--amber); }
+.cell.done { background:var(--green-light); border-color:var(--green); color:var(--green); }
+.cell.compare { background:var(--rose-light); border-color:var(--rose); color:var(--rose); }
+.cell.pivot { background:var(--indigo-light); border-color:var(--indigo); color:var(--indigo); }
+.cell.found { background:var(--teal-light); border-color:var(--teal); color:var(--teal); }
+.cell.mid { background:var(--amber-light); border-color:var(--amber); }
+.cell.elim { opacity:.3; }
+.viz-arrow { color:var(--ink3); font-size:18px; margin:0 4px; }
+.viz-note { font-size:12.5px; color:var(--ink3); margin-top:4px; margin-left:106px; font-style:italic; }
+.viz-controls { display:flex; gap:8px; margin-top:14px; justify-content:center; }
+.viz-btn {
+  padding:8px 20px; border-radius:8px; font-size:13px; font-weight:600;
+  border:1px solid var(--border); background:var(--surface); cursor:pointer;
+  font-family:inherit; transition:all .15s;
+}
+.viz-btn:hover { background:var(--indigo); color:#fff; border-color:var(--indigo); }
+.viz-btn.primary { background:var(--indigo); color:#fff; border-color:var(--indigo); }
+.viz-btn.primary:hover { opacity:.85; }
+
+/* ── NODE DIAGRAM ── */
+.tree-viz { text-align:center; }
+.tree-viz svg { max-width:100%; }
+.tree-viz .node-circle { fill:var(--surface); stroke:var(--indigo); stroke-width:2.5; }
+.tree-viz .node-text { fill:var(--indigo); font-family:'DM Sans'; font-size:14px; font-weight:700; text-anchor:middle; dominant-baseline:central; }
+.tree-viz .edge { stroke:var(--border); stroke-width:2; }
+.tree-viz .node-active .node-circle { fill:var(--amber-light); stroke:var(--amber); }
+.tree-viz .node-active .node-text { fill:var(--amber); }
+.tree-viz .node-done .node-circle { fill:var(--green-light); stroke:var(--green); }
+.tree-viz .node-done .node-text { fill:var(--green); }
+
+/* ── COMPLEXITY TABLE ── */
+.cx-table { width:100%; border-collapse:collapse; margin:18px 0; }
+.cx-table th {
+  text-align:left; font-size:12px; font-weight:700; color:var(--ink3);
+  padding:10px 14px; border-bottom:2px solid var(--border);
+}
+.cx-table td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:14px; color:var(--ink2); vertical-align:top; }
+.cx-table tr.cx-row { cursor:pointer; transition:background .15s; }
+.cx-table tr.cx-row:hover { background:#fafaf8; }
+.cx-table .cx-complexity { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; color:var(--indigo); }
+.cx-table .cx-tag {
+  display:inline-block; font-size:10px; font-weight:700; padding:2px 8px;
+  border-radius:10px; letter-spacing:.3px;
+}
+.cx-tag.fast { background:var(--green-light); color:var(--green); }
+.cx-tag.ok { background:var(--amber-light); color:var(--amber); }
+.cx-tag.slow { background:var(--rose-light); color:var(--rose); }
+
+/* ── EXPANDABLE SAMPLE ── */
+.cx-expand { display:none; }
+.cx-expand.open { display:table-row; }
+.cx-expand td { padding:0; border-bottom:2px solid var(--indigo-light); }
+.cx-expand-inner { padding:16px 20px; background:var(--indigo-light); border-radius:0; }
+.cx-expand-inner p { font-size:13.5px; color:var(--ink2); margin-bottom:10px; max-width:none; }
+.code-sample {
+  background:var(--code-bg); color:var(--code-text); border-radius:8px;
+  padding:16px 18px; font-family:'DM Mono',monospace; font-size:12.5px;
+  line-height:1.75; overflow-x:auto; margin:8px 0; white-space:pre;
+}
+.kw { color:#c4b5fd; } .fn { color:#67e8f9; } .cm { color:#6b7280; font-style:italic; }
+.str { color:#86efac; } .num { color:#fdba74; } .op { color:#93c5fd; }
+.cx-expand-inner .lang-tabs { display:flex; gap:0; margin-bottom:0; border-bottom:1px solid rgba(255,255,255,.1); }
+.lang-tab {
+  padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer;
+  color:var(--ink3); background:none; border:none; font-family:inherit;
+  border-bottom:2px solid transparent;
+}
+.lang-tab.active { color:var(--indigo); border-bottom-color:var(--indigo); }
+.lang-panel { display:none; } .lang-panel.active { display:block; }
+.click-hint { font-size:11px; color:var(--ink3); text-align:right; margin-top:6px; }
+.click-hint span { background:var(--indigo-light); padding:2px 8px; border-radius:4px; font-weight:600; color:var(--indigo); }
+
+/* ── CALLOUT ── */
+.callout {
+  border-radius:10px; padding:16px 20px; margin:16px 0;
+  font-size:14px; line-height:1.65;
+}
+.callout.explain { background:var(--teal-light); color:#0f766e; border-left:4px solid var(--teal); }
+.callout.warn { background:var(--amber-light); color:#92400e; border-left:4px solid var(--amber); }
+.callout.key { background:var(--indigo-light); color:var(--indigo); border-left:4px solid var(--indigo); }
+.callout strong { display:block; margin-bottom:4px; }
+
+/* ── FLOW ARROWS ── */
+.flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0; justify-content:center; }
+.flow-step {
+  background:var(--surface); border:2px solid var(--border); border-radius:10px;
+  padding:10px 16px; font-size:13px; font-weight:600; color:var(--ink2); text-align:center;
+  min-width:100px;
+}
+.flow-step.highlight { border-color:var(--indigo); color:var(--indigo); background:var(--indigo-light); }
+.flow-arrow { color:var(--ink3); font-size:20px; flex-shrink:0; }
+
+/* ── COMPARISON BARS ── */
+.perf-bar-wrap { margin:18px 0; }
+.perf-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.perf-label { width:110px; font-size:12.5px; font-weight:600; text-align:right; font-family:'DM Mono',monospace; color:var(--ink2); flex-shrink:0; }
+.perf-track { flex:1; height:28px; background:#f5f5f4; border-radius:6px; overflow:hidden; }
+.perf-fill { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:10px; font-size:11px; font-weight:700; color:#fff; }
+.perf-eg { width:120px; font-size:11.5px; color:var(--ink3); flex-shrink:0; }
+
+@media(max-width:600px) {
+  .viz-label { width:70px; font-size:11px; }
+  .cell { width:36px; height:36px; font-size:13px; }
+  .perf-label { width:80px; font-size:11px; }
+  .perf-eg { display:none; }
+  h1 { font-size:26px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <button class="tnav active" data-p="sorting">Sorting</button>
+    <button class="tnav" data-p="searching">Searching</button>
+    <button class="tnav" data-p="trees">Trees</button>
+    <button class="tnav" data-p="graphs">Graphs</button>
+    <button class="tnav" data-p="dp">Dynamic Prog.</button>
+    <button class="tnav" data-p="complexity">Complexity</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: SORTING
+     ═══════════════════════════════════════════════════════ -->
+<div class="page active" id="sorting">
+<h1>Sorting Algorithms</h1>
+<p class="subtitle">Visual step-by-step walkthroughs showing how data moves, not just what the code says. Click any row in the complexity table at the bottom to see real code samples.</p>
+
+<!-- ── BUBBLE SORT ── -->
+<h2>Bubble Sort</h2>
+<p>Bubble sort repeatedly walks through the list, compares neighboring elements, and swaps them if they're in the wrong order. After each full pass, the largest unsorted element "bubbles up" to its correct position at the end. It's the simplest sort to understand but one of the slowest for large data.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">↕</div> Bubble Sort — How It Works</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Start at the <em>beginning</em> of the list.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Compare the <em>current element</em> with the <em>next element</em>.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">If the current element is <em>larger</em>, swap them. Otherwise, do nothing.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Move to the <em>next pair</em> and repeat steps 2–3 until you reach the end.</div></div>
+    <div class="step-detail">After this first pass, the largest element is guaranteed to be in its final position at the end of the list.</div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Go back to the beginning and repeat — but now <em>ignore the last element</em> (it's already sorted).</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-text">Keep repeating until a full pass happens with <em>zero swaps</em> — the list is sorted.</div></div>
+  </div>
+</div>
+
+<div class="viz" id="bubble-viz">
+  <div class="viz-title">Bubble Sort — Step by Step</div>
+  <div id="bubble-display"></div>
+  <div class="viz-controls">
+    <button class="viz-btn primary" onclick="bubbleNext()">Next Step →</button>
+    <button class="viz-btn" onclick="bubbleReset()">Reset</button>
+  </div>
+</div>
+
+<div class="callout explain">
+  <strong>Why is it O(n²)?</strong>
+  In the worst case (reverse-sorted list), we do n−1 comparisons on the first pass, n−2 on the second, and so on. That sums to (n−1) + (n−2) + … + 1 = n(n−1)/2, which is O(n²). However, if the list is already sorted, we do one pass with zero swaps and stop — that's the O(n) best case.
+</div>
+
+<!-- ── MERGE SORT ── -->
+<h2>Merge Sort</h2>
+<p>Merge sort uses a divide-and-conquer strategy: split the list in half, recursively sort each half, then merge the two sorted halves back together. The merging step is the key — it combines two sorted lists into one sorted list in O(n) time.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">⇅</div> Merge Sort — How It Works</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">If the list has <em>one or zero elements</em>, it's already sorted. Return it.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Find the <em>middle</em> of the list and split it into a <em>left half</em> and a <em>right half</em>.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Recursively sort the <em>left half</em> using merge sort.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Recursively sort the <em>right half</em> using merge sort.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text"><em>Merge</em> the two sorted halves:</div></div>
+    <div class="step-indent">
+      <div class="step-detail">
+        Compare the first element of each half. Take the smaller one and place it into the result. Move forward in that half. Repeat until both halves are exhausted.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="viz">
+  <div class="viz-title">Merge Sort — Divide & Merge Visualization</div>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-step">[38, 27, 43, 3, 9, 82, 10]</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:6px;">↓ Split in half</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-step">[38, 27, 43]</div>
+    <div class="flow-step">[3, 9, 82, 10]</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:6px;">↓ Split again</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-step">[38]</div>
+    <div class="flow-step">[27, 43]</div>
+    <div class="flow-step">[3, 9]</div>
+    <div class="flow-step">[82, 10]</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:6px;">↓ Split until single elements, then merge upward</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-step highlight">[27, 38]</div>
+    <div class="flow-step highlight">[43]</div>
+    <div class="flow-step highlight">[3, 9]</div>
+    <div class="flow-step highlight">[10, 82]</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:6px;">↓ Merge sorted pairs</p>
+  <div class="flow" style="margin-bottom:16px;">
+    <div class="flow-step highlight">[27, 38, 43]</div>
+    <div class="flow-step highlight">[3, 9, 10, 82]</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:var(--ink3);margin-bottom:6px;">↓ Final merge</p>
+  <div class="flow">
+    <div class="flow-step" style="border-color:var(--green);background:var(--green-light);color:var(--green);">[3, 9, 10, 27, 38, 43, 82] ✓</div>
+  </div>
+</div>
+
+<div class="callout explain">
+  <strong>Why is it O(n log n)?</strong>
+  The list is halved at each level of recursion, giving us log₂(n) levels. At each level, the merge step visits every element exactly once — that's O(n) work per level. Total: n × log n. Unlike quicksort, merge sort is <em>always</em> O(n log n), even in the worst case. The trade-off is O(n) extra space for the temporary arrays during merging.
+</div>
+
+<!-- ── QUICK SORT ── -->
+<h2>Quick Sort</h2>
+<p>Quick sort picks a "pivot" element and partitions the array into two groups: elements smaller than the pivot and elements larger. Then it recursively sorts each group. The clever part is that after partitioning, the pivot is in its final correct position — no merging needed.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">⚡</div> Quick Sort — How It Works</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">If the list has <em>one or zero elements</em>, it's already sorted. Return it.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Choose a <em>pivot</em> element (commonly the last element, a random element, or the median of three).</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text"><em>Partition</em> the remaining elements into two groups:</div></div>
+    <div class="step-indent">
+      <div class="step-detail">
+        Walk through each element. If it's smaller than the pivot, place it in the "left" group. If larger, place it in the "right" group. After partitioning, the pivot sits between the two groups — in its final sorted position.
+      </div>
+    </div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Recursively sort the <em>left group</em> (elements smaller than pivot).</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Recursively sort the <em>right group</em> (elements larger than pivot).</div></div>
+  </div>
+</div>
+
+<div class="viz">
+  <div class="viz-title">Quick Sort — Partition Step (pivot = 43)</div>
+  <div class="viz-row">
+    <div class="viz-label">Start</div>
+    <div class="cell">38</div><div class="cell">27</div><div class="cell pivot">43</div><div class="cell">3</div><div class="cell">9</div><div class="cell">82</div><div class="cell">10</div>
+  </div>
+  <div class="viz-note">Pivot is 43. Scan each element — is it smaller or larger?</div>
+  <div class="viz-row" style="margin-top:14px;">
+    <div class="viz-label">After partition</div>
+    <div class="cell done">38</div><div class="cell done">27</div><div class="cell done">3</div><div class="cell done">9</div><div class="cell done">10</div>
+    <div class="cell pivot">43</div>
+    <div class="cell compare">82</div>
+  </div>
+  <div class="viz-note" style="margin-left:106px;">
+    <span style="color:var(--green);">■ Left group (< 43)</span> &nbsp;
+    <span style="color:var(--indigo);">■ Pivot (in final position!)</span> &nbsp;
+    <span style="color:var(--rose);">■ Right group (> 43)</span>
+  </div>
+</div>
+
+<div class="callout warn">
+  <strong>Why O(n²) worst case?</strong>
+  If the pivot is always the smallest or largest element (e.g., sorted input with last-element pivot), one group has n−1 elements and the other has 0. This gives n levels instead of log n. Fix: use random pivot or median-of-three selection. In practice, quicksort is the fastest general-purpose sort.
+</div>
+
+<!-- ── SORTING COMPLEXITY TABLE ── -->
+<h2>Sorting Complexity Table</h2>
+<p>Click any row to see a working code example for that algorithm.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+
+<table class="cx-table">
+  <thead><tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th><th>Space</th><th>Speed</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-bubble')">
+      <td><strong>Bubble Sort</strong></td>
+      <td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n²)</td><td class="cx-complexity">O(n²)</td><td class="cx-complexity">O(1)</td>
+      <td><span class="cx-tag slow">Slow</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-bubble"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Bubble Sort</strong> repeatedly compares adjacent elements and swaps them if out of order. Simple to implement but impractical for large datasets. Best case O(n) occurs when the input is already sorted and we detect zero swaps.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">bubble_sort</span>(arr):
+    n = <span class="fn">len</span>(arr)
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        swapped = <span class="kw">False</span>
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(n - <span class="num">1</span> - i):  <span class="cm"># last i elements already sorted</span>
+            <span class="kw">if</span> arr[j] > arr[j + <span class="num">1</span>]:
+                arr[j], arr[j + <span class="num">1</span>] = arr[j + <span class="num">1</span>], arr[j]
+                swapped = <span class="kw">True</span>
+        <span class="kw">if not</span> swapped:         <span class="cm"># no swaps → already sorted</span>
+            <span class="kw">break</span>
+    <span class="kw">return</span> arr</div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">void</span> <span class="fn">bubbleSort</span>(<span class="kw">int</span>[] arr) {
+    <span class="kw">int</span> n = arr.length;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < n; i++) {
+        <span class="kw">boolean</span> swapped = <span class="kw">false</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="num">0</span>; j < n - <span class="num">1</span> - i; j++) {
+            <span class="kw">if</span> (arr[j] > arr[j + <span class="num">1</span>]) {
+                <span class="kw">int</span> tmp = arr[j];
+                arr[j] = arr[j + <span class="num">1</span>];
+                arr[j + <span class="num">1</span>] = tmp;
+                swapped = <span class="kw">true</span>;
+            }
+        }
+        <span class="kw">if</span> (!swapped) <span class="kw">break</span>;
+    }
+}</div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">bubbleSort</span>(arr) {
+  <span class="kw">const</span> n = arr.length;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i < n; i++) {
+    <span class="kw">let</span> swapped = <span class="kw">false</span>;
+    <span class="kw">for</span> (<span class="kw">let</span> j = <span class="num">0</span>; j < n - <span class="num">1</span> - i; j++) {
+      <span class="kw">if</span> (arr[j] > arr[j + <span class="num">1</span>]) {
+        [arr[j], arr[j+<span class="num">1</span>]] = [arr[j+<span class="num">1</span>], arr[j]];
+        swapped = <span class="kw">true</span>;
+      }
+    }
+    <span class="kw">if</span> (!swapped) <span class="kw">break</span>;
+  }
+  <span class="kw">return</span> arr;
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-merge')">
+      <td><strong>Merge Sort</strong></td>
+      <td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-merge"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Merge Sort</strong> divides the array in half, sorts each half recursively, then merges the two sorted halves. It guarantees O(n log n) in all cases but requires O(n) extra space for the merge step.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">merge_sort</span>(arr):
+    <span class="kw">if</span> <span class="fn">len</span>(arr) <= <span class="num">1</span>:
+        <span class="kw">return</span> arr
+    mid = <span class="fn">len</span>(arr) // <span class="num">2</span>
+    left  = <span class="fn">merge_sort</span>(arr[:mid])
+    right = <span class="fn">merge_sort</span>(arr[mid:])
+    <span class="kw">return</span> <span class="fn">merge</span>(left, right)
+
+<span class="kw">def</span> <span class="fn">merge</span>(a, b):
+    result, i, j = [], <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">while</span> i < <span class="fn">len</span>(a) <span class="kw">and</span> j < <span class="fn">len</span>(b):
+        <span class="kw">if</span> a[i] <= b[j]:
+            result.append(a[i]); i += <span class="num">1</span>
+        <span class="kw">else</span>:
+            result.append(b[j]); j += <span class="num">1</span>
+    result.extend(a[i:])
+    result.extend(b[j:])
+    <span class="kw">return</span> result</div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="kw">int</span>[] arr, <span class="kw">int</span> l, <span class="kw">int</span> r) {
+    <span class="kw">if</span> (l >= r) <span class="kw">return</span>;
+    <span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;
+    <span class="fn">mergeSort</span>(arr, l, mid);
+    <span class="fn">mergeSort</span>(arr, mid + <span class="num">1</span>, r);
+    <span class="fn">merge</span>(arr, l, mid, r);
+}
+<span class="cm">// merge() combines arr[l..mid] and arr[mid+1..r]</span></div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">mergeSort</span>(arr) {
+  <span class="kw">if</span> (arr.length <= <span class="num">1</span>) <span class="kw">return</span> arr;
+  <span class="kw">const</span> mid = Math.floor(arr.length / <span class="num">2</span>);
+  <span class="kw">const</span> left  = <span class="fn">mergeSort</span>(arr.slice(<span class="num">0</span>, mid));
+  <span class="kw">const</span> right = <span class="fn">mergeSort</span>(arr.slice(mid));
+  <span class="kw">return</span> <span class="fn">merge</span>(left, right);
+}
+
+<span class="kw">function</span> <span class="fn">merge</span>(a, b) {
+  <span class="kw">const</span> result = [];
+  <span class="kw">let</span> i = <span class="num">0</span>, j = <span class="num">0</span>;
+  <span class="kw">while</span> (i < a.length && j < b.length)
+    result.push(a[i] <= b[j] ? a[i++] : b[j++]);
+  <span class="kw">return</span> [...result, ...a.slice(i), ...b.slice(j)];
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-quick')">
+      <td><strong>Quick Sort</strong></td>
+      <td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n²)</td><td class="cx-complexity">O(lg n)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-quick"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Quick Sort</strong> picks a pivot, partitions elements around it, then recursively sorts each side. Average O(n log n) and fastest in practice due to cache-friendly memory access. Worst case O(n²) occurs with bad pivots but is avoidable with randomization.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">quick_sort</span>(arr):
+    <span class="kw">if</span> <span class="fn">len</span>(arr) <= <span class="num">1</span>:
+        <span class="kw">return</span> arr
+    pivot = arr[<span class="fn">len</span>(arr) // <span class="num">2</span>]
+    left   = [x <span class="kw">for</span> x <span class="kw">in</span> arr <span class="kw">if</span> x < pivot]
+    middle = [x <span class="kw">for</span> x <span class="kw">in</span> arr <span class="kw">if</span> x == pivot]
+    right  = [x <span class="kw">for</span> x <span class="kw">in</span> arr <span class="kw">if</span> x > pivot]
+    <span class="kw">return</span> <span class="fn">quick_sort</span>(left) + middle + <span class="fn">quick_sort</span>(right)</div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">void</span> <span class="fn">quickSort</span>(<span class="kw">int</span>[] arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">if</span> (lo >= hi) <span class="kw">return</span>;
+    <span class="kw">int</span> p = <span class="fn">partition</span>(arr, lo, hi);
+    <span class="fn">quickSort</span>(arr, lo, p - <span class="num">1</span>);
+    <span class="fn">quickSort</span>(arr, p + <span class="num">1</span>, hi);
+}</div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">quickSort</span>(arr) {
+  <span class="kw">if</span> (arr.length <= <span class="num">1</span>) <span class="kw">return</span> arr;
+  <span class="kw">const</span> pivot = arr[Math.floor(arr.length / <span class="num">2</span>)];
+  <span class="kw">const</span> left = arr.filter(x => x < pivot);
+  <span class="kw">const</span> mid  = arr.filter(x => x === pivot);
+  <span class="kw">const</span> right= arr.filter(x => x > pivot);
+  <span class="kw">return</span> [...<span class="fn">quickSort</span>(left), ...mid, ...<span class="fn">quickSort</span>(right)];
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-insertion')">
+      <td><strong>Insertion Sort</strong></td>
+      <td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n²)</td><td class="cx-complexity">O(n²)</td><td class="cx-complexity">O(1)</td>
+      <td><span class="cx-tag ok">Medium</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-insertion"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Insertion Sort</strong> builds the sorted list one element at a time by inserting each new element into its correct position among the already-sorted elements. Excellent for small or nearly-sorted data. Many real-world sorting implementations (like Python's Timsort) switch to insertion sort for small sub-arrays.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">insertion_sort</span>(arr):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">len</span>(arr)):
+        key = arr[i]           <span class="cm"># element to insert</span>
+        j = i - <span class="num">1</span>
+        <span class="kw">while</span> j >= <span class="num">0</span> <span class="kw">and</span> arr[j] > key:
+            arr[j + <span class="num">1</span>] = arr[j]  <span class="cm"># shift right</span>
+            j -= <span class="num">1</span>
+        arr[j + <span class="num">1</span>] = key         <span class="cm"># insert into correct spot</span>
+    <span class="kw">return</span> arr</div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">void</span> <span class="fn">insertionSort</span>(<span class="kw">int</span>[] arr) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">1</span>; i < arr.length; i++) {
+        <span class="kw">int</span> key = arr[i], j = i - <span class="num">1</span>;
+        <span class="kw">while</span> (j >= <span class="num">0</span> && arr[j] > key) {
+            arr[j + <span class="num">1</span>] = arr[j];
+            j--;
+        }
+        arr[j + <span class="num">1</span>] = key;
+    }
+}</div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">insertionSort</span>(arr) {
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">1</span>; i < arr.length; i++) {
+    <span class="kw">let</span> key = arr[i], j = i - <span class="num">1</span>;
+    <span class="kw">while</span> (j >= <span class="num">0</span> && arr[j] > key) {
+      arr[j + <span class="num">1</span>] = arr[j];
+      j--;
+    }
+    arr[j + <span class="num">1</span>] = key;
+  }
+  <span class="kw">return</span> arr;
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-heap')">
+      <td><strong>Heap Sort</strong></td>
+      <td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(n lg n)</td><td class="cx-complexity">O(1)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-heap"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Heap Sort</strong> builds a max-heap from the data, then repeatedly extracts the maximum element and places it at the end. Guarantees O(n log n) with O(1) extra space — the only comparison sort with both guarantees. Not stable though, and slower in practice than quicksort due to poor cache behavior.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">heap_sort</span>(arr):
+    heapq.<span class="fn">heapify</span>(arr)            <span class="cm"># build a min-heap in O(n)</span>
+    <span class="kw">return</span> [heapq.<span class="fn">heappop</span>(arr)    <span class="cm"># extract min n times → O(n log n)</span>
+            <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(arr))]</div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: SEARCHING
+     ═══════════════════════════════════════════════════════ -->
+<div class="page" id="searching">
+<h1>Searching Algorithms</h1>
+<p class="subtitle">How to find what you're looking for — from scanning every element to eliminating half at a time.</p>
+
+<h2>Linear Search</h2>
+<p>The simplest search: check every element one by one until you find the target or exhaust the list. No requirements on the data — works on any list, sorted or not.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">→</div> Linear Search — How It Works</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Start at the <em>first element</em> of the list.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Compare it with the <em>target value</em>.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">If it <em>matches</em>, you're done — return the position.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">If it doesn't match, <em>move to the next element</em> and repeat.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">If you reach the end without a match, the target <em>isn't in the list</em>.</div></div>
+  </div>
+</div>
+
+<h2>Binary Search</h2>
+<p>Binary search works only on <strong>sorted data</strong> but is dramatically faster: it eliminates half the remaining elements with each comparison. For a million elements, linear search needs up to 1,000,000 checks — binary search needs at most 20.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">½</div> Binary Search — How It Works</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Set two boundaries: <em>low</em> at the start and <em>high</em> at the end of the sorted list.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Find the <em>middle element</em> between low and high.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Compare the middle element with the target:</div></div>
+    <div class="step-indent">
+      <div class="step-detail">
+        If it <strong>matches</strong> → you found it, return the position.<br>
+        If the target is <strong>smaller</strong> → it must be in the left half. Move the high boundary to just before the middle.<br>
+        If the target is <strong>larger</strong> → it must be in the right half. Move the low boundary to just after the middle.
+      </div>
+    </div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Repeat steps 2–3 with the <em>narrowed range</em> until you find the target or the range becomes empty.</div></div>
+  </div>
+</div>
+
+<div class="viz" id="bs-viz">
+  <div class="viz-title">Binary Search — Finding 33 in a Sorted Array</div>
+  <div id="bs-display"></div>
+  <div class="viz-controls">
+    <button class="viz-btn primary" onclick="bsNext()">Next Step →</button>
+    <button class="viz-btn" onclick="bsReset()">Reset</button>
+  </div>
+</div>
+
+<div class="callout explain">
+  <strong>Why is it O(log n)?</strong>
+  Each comparison eliminates exactly half the remaining elements. Starting with n elements: after 1 comparison you have n/2, after 2 you have n/4, after k you have n/2ᵏ. You stop when n/2ᵏ = 1, meaning k = log₂(n). For n = 1,000,000 that's just ~20 steps.
+</div>
+
+<h2>Searching Complexity Table</h2>
+<p>Click any row to see the implementation.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+
+<table class="cx-table">
+  <thead><tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Requirement</th><th>Speed</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-linear')">
+      <td><strong>Linear Search</strong></td>
+      <td class="cx-complexity">O(n)</td><td class="cx-complexity">O(1)</td><td>None</td>
+      <td><span class="cx-tag ok">Medium</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-linear"><td colspan="5"><div class="cx-expand-inner">
+      <p>Checks every element from start to end. Works on any list — sorted or unsorted. Use when the data is small, unsorted, or you're only searching once.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">linear_search</span>(arr, target):
+    <span class="kw">for</span> i, val <span class="kw">in</span> <span class="fn">enumerate</span>(arr):
+        <span class="kw">if</span> val == target:
+            <span class="kw">return</span> i       <span class="cm"># found at index i</span>
+    <span class="kw">return</span> -<span class="num">1</span>              <span class="cm"># not found</span></div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">int</span> <span class="fn">linearSearch</span>(<span class="kw">int</span>[] arr, <span class="kw">int</span> target) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < arr.length; i++)
+        <span class="kw">if</span> (arr[i] == target) <span class="kw">return</span> i;
+    <span class="kw">return</span> -<span class="num">1</span>;
+}</div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">linearSearch</span>(arr, target) {
+  <span class="kw">return</span> arr.indexOf(target); <span class="cm">// built-in linear scan</span>
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-binary')">
+      <td><strong>Binary Search</strong></td>
+      <td class="cx-complexity">O(log n)</td><td class="cx-complexity">O(1)</td><td>Sorted array</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-binary"><td colspan="5"><div class="cx-expand-inner">
+      <p>Halves the search space with each comparison. Requires the array to be sorted. If you need to search many times, sort once O(n log n) then binary search each query O(log n).</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button><button class="lang-tab" onclick="switchLang(this,'java')">Java</button><button class="lang-tab" onclick="switchLang(this,'js')">JavaScript</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">binary_search</span>(arr, target):
+    lo, hi = <span class="num">0</span>, <span class="fn">len</span>(arr) - <span class="num">1</span>
+    <span class="kw">while</span> lo <= hi:
+        mid = lo + (hi - lo) // <span class="num">2</span>   <span class="cm"># avoids overflow</span>
+        <span class="kw">if</span> arr[mid] == target:
+            <span class="kw">return</span> mid
+        <span class="kw">elif</span> arr[mid] < target:
+            lo = mid + <span class="num">1</span>            <span class="cm"># search right half</span>
+        <span class="kw">else</span>:
+            hi = mid - <span class="num">1</span>            <span class="cm"># search left half</span>
+    <span class="kw">return</span> -<span class="num">1</span></div></div>
+      <div class="lang-panel" data-lang="java"><div class="code-sample"><span class="kw">int</span> <span class="fn">binarySearch</span>(<span class="kw">int</span>[] arr, <span class="kw">int</span> target) {
+    <span class="kw">int</span> lo = <span class="num">0</span>, hi = arr.length - <span class="num">1</span>;
+    <span class="kw">while</span> (lo <= hi) {
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="num">2</span>;
+        <span class="kw">if</span>      (arr[mid] == target) <span class="kw">return</span> mid;
+        <span class="kw">else if</span> (arr[mid] <  target) lo = mid + <span class="num">1</span>;
+        <span class="kw">else</span>                         hi = mid - <span class="num">1</span>;
+    }
+    <span class="kw">return</span> -<span class="num">1</span>;
+}</div></div>
+      <div class="lang-panel" data-lang="js"><div class="code-sample"><span class="kw">function</span> <span class="fn">binarySearch</span>(arr, target) {
+  <span class="kw">let</span> lo = <span class="num">0</span>, hi = arr.length - <span class="num">1</span>;
+  <span class="kw">while</span> (lo <= hi) {
+    <span class="kw">const</span> mid = (lo + hi) >>> <span class="num">1</span>; <span class="cm">// unsigned shift avoids overflow</span>
+    <span class="kw">if</span>      (arr[mid] === target) <span class="kw">return</span> mid;
+    <span class="kw">else if</span> (arr[mid] <   target) lo = mid + <span class="num">1</span>;
+    <span class="kw">else</span>                          hi = mid - <span class="num">1</span>;
+  }
+  <span class="kw">return</span> -<span class="num">1</span>;
+}</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-hash')">
+      <td><strong>Hash Table Lookup</strong></td>
+      <td class="cx-complexity">O(1) avg</td><td class="cx-complexity">O(n)</td><td>Hash function</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-hash"><td colspan="5"><div class="cx-expand-inner">
+      <p>Hashing converts a key directly into an array index for O(1) average lookup. The trade-off: O(n) extra memory for the table, and O(n) worst case if many keys collide into the same bucket. In practice, collisions are rare with a good hash function.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="cm"># Python dictionaries and sets use hash tables internally</span>
+lookup = {<span class="str">"apple"</span>: <span class="num">3</span>, <span class="str">"banana"</span>: <span class="num">5</span>, <span class="str">"cherry"</span>: <span class="num">2</span>}
+
+<span class="cm"># O(1) average lookup:</span>
+<span class="fn">print</span>(lookup[<span class="str">"banana"</span>])   <span class="cm"># → 5</span>
+<span class="fn">print</span>(<span class="str">"cherry"</span> <span class="kw">in</span> lookup) <span class="cm"># → True (O(1) membership test)</span></div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: TREES
+     ═══════════════════════════════════════════════════════ -->
+<div class="page" id="trees">
+<h1>Tree Traversals</h1>
+<p class="subtitle">Four ways to visit every node in a tree — each in a different order, each useful for different problems.</p>
+
+<div class="viz tree-viz">
+  <div class="viz-title">The Tree We'll Traverse</div>
+  <svg viewBox="0 0 400 220" width="400" height="220">
+    <line class="edge" x1="200" y1="36" x2="100" y2="106"/>
+    <line class="edge" x1="200" y1="36" x2="300" y2="106"/>
+    <line class="edge" x1="100" y1="106" x2="55" y2="176"/>
+    <line class="edge" x1="100" y1="106" x2="145" y2="176"/>
+    <line class="edge" x1="300" y1="106" x2="255" y2="176"/>
+    <line class="edge" x1="300" y1="106" x2="345" y2="176"/>
+    <g><circle class="node-circle" cx="200" cy="36" r="22"/><text class="node-text" x="200" y="36">8</text></g>
+    <g><circle class="node-circle" cx="100" cy="106" r="22"/><text class="node-text" x="100" y="106">3</text></g>
+    <g><circle class="node-circle" cx="300" cy="106" r="22"/><text class="node-text" x="300" y="106">10</text></g>
+    <g><circle class="node-circle" cx="55" cy="176" r="22"/><text class="node-text" x="55" y="176">1</text></g>
+    <g><circle class="node-circle" cx="145" cy="176" r="22"/><text class="node-text" x="145" y="176">6</text></g>
+    <g><circle class="node-circle" cx="255" cy="176" r="22"/><text class="node-text" x="255" y="176">9</text></g>
+    <g><circle class="node-circle" cx="345" cy="176" r="22"/><text class="node-text" x="345" y="176">14</text></g>
+  </svg>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="display:flex;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+    <button class="tnav active" style="flex:1;min-width:80px;" onclick="showTrav(this,'trav-in')">Inorder</button>
+    <button class="tnav" style="flex:1;min-width:80px;" onclick="showTrav(this,'trav-pre')">Preorder</button>
+    <button class="tnav" style="flex:1;min-width:80px;" onclick="showTrav(this,'trav-post')">Postorder</button>
+    <button class="tnav" style="flex:1;min-width:80px;" onclick="showTrav(this,'trav-level')">Level Order</button>
+  </div>
+
+  <div id="trav-in" class="trav-panel" style="padding:20px;">
+    <h3 style="margin-top:0;">Inorder: Left → Root → Right</h3>
+    <p>Visit the left subtree first, then the current node, then the right subtree. For a Binary Search Tree, this produces elements in <strong>sorted order</strong> — that's why it's called "inorder."</p>
+    <div class="pseudo" style="margin:14px 0;box-shadow:none;">
+      <div class="pseudo-header" style="background:var(--teal);"><div class="ph-icon">🌿</div> Inorder Traversal</div>
+      <div class="pseudo-body">
+        <div class="step"><div class="step-num">1</div><div class="step-text">If the node is empty, stop and go back.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">First, traverse the <em>entire left subtree</em>.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Then, <em>visit the current node</em> (record its value).</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Finally, traverse the <em>entire right subtree</em>.</div></div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step highlight">1</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">3</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">6</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">8</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">9</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">10</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">14</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--teal);margin-top:8px;">Notice: values come out sorted!</p>
+  </div>
+
+  <div id="trav-pre" class="trav-panel" style="padding:20px;display:none;">
+    <h3 style="margin-top:0;">Preorder: Root → Left → Right</h3>
+    <p>Visit the current node first, then the left subtree, then the right. Useful for creating a copy of the tree or serializing its structure.</p>
+    <div class="pseudo" style="margin:14px 0;box-shadow:none;">
+      <div class="pseudo-header" style="background:var(--amber);"><div class="ph-icon">🌿</div> Preorder Traversal</div>
+      <div class="pseudo-body">
+        <div class="step"><div class="step-num">1</div><div class="step-text">If the node is empty, stop and go back.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">First, <em>visit the current node</em> (record its value).</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Then, traverse the <em>entire left subtree</em>.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Finally, traverse the <em>entire right subtree</em>.</div></div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step highlight">8</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">3</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">1</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">6</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">10</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">9</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">14</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--amber);margin-top:8px;">Root always comes first — useful for tree serialization.</p>
+  </div>
+
+  <div id="trav-post" class="trav-panel" style="padding:20px;display:none;">
+    <h3 style="margin-top:0;">Postorder: Left → Right → Root</h3>
+    <p>Visit children before the parent. Useful for deleting a tree (delete children before parent) or evaluating expression trees.</p>
+    <div class="pseudo" style="margin:14px 0;box-shadow:none;">
+      <div class="pseudo-header" style="background:var(--rose);"><div class="ph-icon">🌿</div> Postorder Traversal</div>
+      <div class="pseudo-body">
+        <div class="step"><div class="step-num">1</div><div class="step-text">If the node is empty, stop and go back.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">First, traverse the <em>entire left subtree</em>.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Then, traverse the <em>entire right subtree</em>.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Finally, <em>visit the current node</em>.</div></div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step highlight">1</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">6</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">3</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">9</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">14</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">10</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">8</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--rose);margin-top:8px;">Root comes last — children are always processed first.</p>
+  </div>
+
+  <div id="trav-level" class="trav-panel" style="padding:20px;display:none;">
+    <h3 style="margin-top:0;">Level Order (BFS): Top → Bottom, Left → Right</h3>
+    <p>Visit all nodes at depth 0, then depth 1, then depth 2, and so on. Uses a queue instead of recursion. This is Breadth-First Search applied to a tree.</p>
+    <div class="pseudo" style="margin:14px 0;box-shadow:none;">
+      <div class="pseudo-header" style="background:var(--indigo);"><div class="ph-icon">🌿</div> Level-Order Traversal</div>
+      <div class="pseudo-body">
+        <div class="step"><div class="step-num">1</div><div class="step-text">Place the <em>root</em> into a queue.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">While the queue is not empty:</div></div>
+        <div class="step-indent"><div class="step-detail">Remove the front node. Record its value. Add its left child to the queue (if it exists), then its right child.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Repeat until the queue is <em>empty</em>.</div></div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step highlight">8</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">3, 10</div><div class="flow-arrow">→</div>
+      <div class="flow-step highlight">1, 6, 9, 14</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--indigo);margin-top:8px;">Level by level — used for shortest-path problems.</p>
+  </div>
+</div>
+
+<h2>Tree Operations Complexity</h2>
+<p>Click any row for the code sample.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+<table class="cx-table">
+  <thead><tr><th>Operation</th><th>BST (balanced)</th><th>BST (skewed)</th><th>Heap</th><th>Speed</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-bst-search')">
+      <td><strong>Search</strong></td>
+      <td class="cx-complexity">O(log n)</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-bst-search"><td colspan="5"><div class="cx-expand-inner">
+      <p>In a balanced BST, each comparison moves you down one level, and there are only log₂(n) levels. A skewed tree (shaped like a linked list) forces you to visit every node — that's why balancing matters.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">bst_search</span>(root, target):
+    <span class="kw">if not</span> root:
+        <span class="kw">return</span> <span class="kw">None</span>              <span class="cm"># not found</span>
+    <span class="kw">if</span> target == root.val:
+        <span class="kw">return</span> root               <span class="cm"># found!</span>
+    <span class="kw">elif</span> target < root.val:
+        <span class="kw">return</span> <span class="fn">bst_search</span>(root.left, target)   <span class="cm"># go left</span>
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="fn">bst_search</span>(root.right, target)  <span class="cm"># go right</span></div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-bst-insert')">
+      <td><strong>Insert</strong></td>
+      <td class="cx-complexity">O(log n)</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(log n)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-bst-insert"><td colspan="5"><div class="cx-expand-inner">
+      <p>Walk down the tree comparing values until you find an empty spot, then attach the new node there. In a heap, add at the bottom and "bubble up" by swapping with parents.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">bst_insert</span>(root, val):
+    <span class="kw">if not</span> root:
+        <span class="kw">return</span> <span class="fn">TreeNode</span>(val)    <span class="cm"># empty spot → place it here</span>
+    <span class="kw">if</span> val < root.val:
+        root.left = <span class="fn">bst_insert</span>(root.left, val)
+    <span class="kw">else</span>:
+        root.right = <span class="fn">bst_insert</span>(root.right, val)
+    <span class="kw">return</span> root</div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: GRAPHS
+     ═══════════════════════════════════════════════════════ -->
+<div class="page" id="graphs">
+<h1>Graph Algorithms</h1>
+<p class="subtitle">BFS and DFS — the two fundamental ways to explore any network of connected nodes.</p>
+
+<h2>BFS — Breadth-First Search</h2>
+<p>BFS explores a graph level by level, like ripples spreading from a stone dropped in water. It visits all neighbors first before moving to the next layer. This makes BFS perfect for finding the <strong>shortest path in an unweighted graph</strong>.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">◎</div> Breadth-First Search</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Place the <em>starting node</em> into a queue and mark it as visited.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Remove the <em>front node</em> from the queue. Process it.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Look at all its <em>unvisited neighbors</em>. Mark each as visited and add them to the <em>back of the queue</em>.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Repeat steps 2–3 until the queue is <em>empty</em>.</div></div>
+    <div class="step-detail">The queue ensures we process nodes in the order we discovered them — nearest nodes first. This guarantees shortest-path discovery in unweighted graphs.</div>
+  </div>
+</div>
+
+<h2>DFS — Depth-First Search</h2>
+<p>DFS dives as deep as possible along one path before backtracking. Think of exploring a maze: go straight until you hit a wall, then backtrack to the last intersection and try another path.</p>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">↓</div> Depth-First Search</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text">Start at the initial node. Mark it as <em>visited</em>.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Pick one <em>unvisited neighbor</em> and move to it. Mark it visited.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Repeat step 2 — keep going <em>deeper</em> until there are no unvisited neighbors.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text"><em>Backtrack</em> to the previous node and try its other unvisited neighbors.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Repeat until every reachable node has been visited.</div></div>
+    <div class="step-detail">DFS can use recursion (the call stack acts as the implicit stack) or an explicit stack data structure. BFS uses a queue; DFS uses a stack — that single difference changes the exploration order entirely.</div>
+  </div>
+</div>
+
+<div class="callout key">
+  <strong>BFS vs DFS — Quick Decision Guide</strong>
+  Need the shortest path? → BFS. Need to explore all possibilities (permutations, paths)? → DFS. Detecting cycles? → DFS. Level-order traversal? → BFS. Topological sort? → DFS.
+</div>
+
+<h2>Graph Algorithms Complexity</h2>
+<p>Click any row for the code sample.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+<table class="cx-table">
+  <thead><tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Best For</th><th>Speed</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-bfs')">
+      <td><strong>BFS</strong></td>
+      <td class="cx-complexity">O(V + E)</td><td class="cx-complexity">O(V)</td><td>Shortest path (unweighted)</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-bfs"><td colspan="5"><div class="cx-expand-inner">
+      <p>V is the number of vertices (nodes), E is the number of edges (connections). We visit each node once and examine each edge once — hence O(V + E). Space is O(V) for the visited set and the queue.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">bfs</span>(graph, start):
+    visited = {start}
+    queue = <span class="fn">deque</span>([start])
+    order = []
+
+    <span class="kw">while</span> queue:
+        node = queue.<span class="fn">popleft</span>()     <span class="cm"># take from front</span>
+        order.append(node)
+        <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+            <span class="kw">if</span> neighbor <span class="kw">not in</span> visited:
+                visited.add(neighbor)
+                queue.append(neighbor) <span class="cm"># add to back</span>
+    <span class="kw">return</span> order</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-dfs')">
+      <td><strong>DFS</strong></td>
+      <td class="cx-complexity">O(V + E)</td><td class="cx-complexity">O(V)</td><td>Cycle detection, all paths</td>
+      <td><span class="cx-tag fast">Fast</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-dfs"><td colspan="5"><div class="cx-expand-inner">
+      <p>Same complexity as BFS — different exploration order. Recursive DFS uses the call stack; iterative DFS uses an explicit stack. Space is O(V) in the worst case (a long chain graph where the stack holds every node).</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">dfs</span>(graph, start, visited=<span class="kw">None</span>):
+    <span class="kw">if</span> visited <span class="kw">is</span> <span class="kw">None</span>:
+        visited = <span class="fn">set</span>()
+    visited.add(start)
+    <span class="fn">print</span>(start)                   <span class="cm"># process node</span>
+    <span class="kw">for</span> neighbor <span class="kw">in</span> graph[start]:
+        <span class="kw">if</span> neighbor <span class="kw">not in</span> visited:
+            <span class="fn">dfs</span>(graph, neighbor, visited)  <span class="cm"># go deeper</span>
+    <span class="kw">return</span> visited</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-dijkstra')">
+      <td><strong>Dijkstra's</strong></td>
+      <td class="cx-complexity">O((V+E) lg V)</td><td class="cx-complexity">O(V)</td><td>Shortest path (weighted)</td>
+      <td><span class="cx-tag ok">Medium</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-dijkstra"><td colspan="5"><div class="cx-expand-inner">
+      <p>Like BFS, but uses a priority queue (min-heap) instead of a regular queue. Always processes the closest unvisited node next. Doesn't work with negative edge weights — use Bellman-Ford for that.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">dijkstra</span>(graph, start):
+    <span class="cm"># graph = {node: [(neighbor, weight), ...]}</span>
+    dist = {node: <span class="fn">float</span>(<span class="str">'inf'</span>) <span class="kw">for</span> node <span class="kw">in</span> graph}
+    dist[start] = <span class="num">0</span>
+    heap = [(<span class="num">0</span>, start)]
+
+    <span class="kw">while</span> heap:
+        d, u = heapq.<span class="fn">heappop</span>(heap)
+        <span class="kw">if</span> d > dist[u]: <span class="kw">continue</span>    <span class="cm"># stale entry</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                heapq.<span class="fn">heappush</span>(heap, (dist[v], v))
+    <span class="kw">return</span> dist</div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: DYNAMIC PROGRAMMING
+     ═══════════════════════════════════════════════════════ -->
+<div class="page" id="dp">
+<h1>Dynamic Programming</h1>
+<p class="subtitle">DP is just "recursion with a notebook" — if you've solved a subproblem before, look it up instead of re-solving it.</p>
+
+<div class="callout key">
+  <strong>When does a problem need DP?</strong>
+  It asks for a maximum, minimum, count of ways, or "is it possible" — AND the same subproblem appears multiple times during recursion. If you see overlapping subproblems, that's the signal.
+</div>
+
+<div class="pseudo">
+  <div class="pseudo-header"><div class="ph-icon">📝</div> The 5-Step DP Framework (use every time)</div>
+  <div class="pseudo-body">
+    <div class="step"><div class="step-num">1</div><div class="step-text"><em>Define the state</em> — What does dp[i] (or dp[i][j]) represent in plain English?</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text"><em>Find the recurrence</em> — How does dp[i] relate to smaller subproblems?</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text"><em>Identify base cases</em> — What are the smallest subproblems you can solve directly?</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text"><em>Determine iteration order</em> — Fill the table so that dependencies are computed first.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text"><em>Optimize space</em> — Often you only need the previous row, reducing O(n²) space to O(n).</div></div>
+  </div>
+</div>
+
+<h2>Example: Fibonacci (Why DP Exists)</h2>
+<p>Computing Fibonacci naively is O(2ⁿ) because the same subproblems are solved over and over. With DP, we store each result and never recompute — O(n).</p>
+
+<div class="viz">
+  <div class="viz-title">Fibonacci Without DP — Redundant Work (calculating F(5))</div>
+  <div class="flow" style="flex-wrap:wrap;">
+    <div class="flow-step" style="border-color:var(--rose);color:var(--rose);">F(5)</div>
+  </div>
+  <div class="flow" style="margin-top:8px;">
+    <div class="flow-step">F(4)</div><div class="flow-arrow">+</div><div class="flow-step">F(3)</div>
+  </div>
+  <div class="flow" style="margin-top:8px;">
+    <div class="flow-step">F(3)</div><div class="flow-arrow">+</div><div class="flow-step">F(2)</div>
+    <div style="width:16px;"></div>
+    <div class="flow-step" style="border-color:var(--rose);color:var(--rose);">F(2)</div><div class="flow-arrow">+</div><div class="flow-step">F(1)</div>
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--rose);margin-top:12px;">F(3) is calculated twice. F(2) is calculated three times. This redundancy explodes exponentially.</p>
+</div>
+
+<div class="viz">
+  <div class="viz-title">Fibonacci With DP — Each Value Computed Once</div>
+  <div class="viz-row" style="justify-content:center;gap:4px;">
+    <div style="text-align:center;"><div class="cell done" style="width:60px;">0</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(0)</div></div>
+    <div style="text-align:center;"><div class="cell done" style="width:60px;">1</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(1)</div></div>
+    <div style="text-align:center;"><div class="cell done" style="width:60px;">1</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(2)</div></div>
+    <div style="text-align:center;"><div class="cell done" style="width:60px;">2</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(3)</div></div>
+    <div style="text-align:center;"><div class="cell done" style="width:60px;">3</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(4)</div></div>
+    <div style="text-align:center;"><div class="cell active" style="width:60px;">5</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">F(5)</div></div>
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--green);margin-top:10px;">Each value computed exactly once. Just look left to find dependencies. O(n) time.</p>
+</div>
+
+<h2>Common DP Patterns</h2>
+<p>Click any row to see the code sample and detailed explanation.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+<table class="cx-table">
+  <thead><tr><th>Pattern</th><th>State Shape</th><th>Time</th><th>Classic Problem</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-dp-1d')">
+      <td><strong>1D DP</strong></td>
+      <td class="cx-complexity">dp[i]</td><td class="cx-complexity">O(n)</td><td>Climbing Stairs, House Robber</td>
+    </tr>
+    <tr class="cx-expand" id="ex-dp-1d"><td colspan="4"><div class="cx-expand-inner">
+      <p><strong>Climbing Stairs:</strong> You can climb 1 or 2 stairs at a time. How many distinct ways to reach stair n? dp[i] = the number of ways to reach stair i. Since you can arrive from stair i−1 (one step) or stair i−2 (two steps), the recurrence is dp[i] = dp[i−1] + dp[i−2] — this is just Fibonacci.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">climb_stairs</span>(n):
+    <span class="kw">if</span> n <= <span class="num">2</span>: <span class="kw">return</span> n
+    prev2, prev1 = <span class="num">1</span>, <span class="num">2</span>         <span class="cm"># base cases: F(1)=1, F(2)=2</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="num">3</span>, n + <span class="num">1</span>):
+        curr = prev1 + prev2      <span class="cm"># dp[i] = dp[i-1] + dp[i-2]</span>
+        prev2 = prev1
+        prev1 = curr
+    <span class="kw">return</span> prev1
+<span class="cm"># Space optimized from O(n) to O(1) — only need last 2 values</span></div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-dp-knapsack')">
+      <td><strong>Knapsack</strong></td>
+      <td class="cx-complexity">dp[i] or dp[i][w]</td><td class="cx-complexity">O(n × W)</td><td>Coin Change, Subset Sum</td>
+    </tr>
+    <tr class="cx-expand" id="ex-dp-knapsack"><td colspan="4"><div class="cx-expand-inner">
+      <p><strong>Coin Change:</strong> Given coins of different denominations, find the fewest coins to make a target amount. dp[i] = minimum coins to make amount i. For each amount, try every coin: dp[i] = min(dp[i], dp[i − coin] + 1). "If I use this coin, how many more coins do I need for the remainder?"</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">coin_change</span>(coins, amount):
+    dp = [<span class="fn">float</span>(<span class="str">'inf'</span>)] * (amount + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="num">0</span>                   <span class="cm"># base: 0 coins for amount 0</span>
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, amount + <span class="num">1</span>):
+        <span class="kw">for</span> coin <span class="kw">in</span> coins:
+            <span class="kw">if</span> coin <= i:
+                dp[i] = <span class="fn">min</span>(dp[i], dp[i - coin] + <span class="num">1</span>)
+
+    <span class="kw">return</span> dp[amount] <span class="kw">if</span> dp[amount] != <span class="fn">float</span>(<span class="str">'inf'</span>) <span class="kw">else</span> -<span class="num">1</span>
+
+<span class="cm"># coins=[1,3,4], amount=6 → dp=[0,1,2,1,1,2,2] → answer: 2 (3+3)</span></div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-dp-2d')">
+      <td><strong>2D / String DP</strong></td>
+      <td class="cx-complexity">dp[i][j]</td><td class="cx-complexity">O(m × n)</td><td>Edit Distance, LCS</td>
+    </tr>
+    <tr class="cx-expand" id="ex-dp-2d"><td colspan="4"><div class="cx-expand-inner">
+      <p><strong>Longest Common Subsequence:</strong> dp[i][j] = LCS length of text1[:i] and text2[:j]. If characters match, we extend from the diagonal: dp[i][j] = dp[i−1][j−1] + 1. If not, take the best of skipping either character: dp[i][j] = max(dp[i−1][j], dp[i][j−1]).</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">def</span> <span class="fn">lcs</span>(text1, text2):
+    m, n = <span class="fn">len</span>(text1), <span class="fn">len</span>(text2)
+    dp = [[<span class="num">0</span>] * (n + <span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(m + <span class="num">1</span>)]
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> text1[i-<span class="num">1</span>] == text2[j-<span class="num">1</span>]:
+                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">1</span>  <span class="cm"># match → extend</span>
+            <span class="kw">else</span>:
+                dp[i][j] = <span class="fn">max</span>(dp[i-<span class="num">1</span>][j], dp[i][j-<span class="num">1</span>])
+
+    <span class="kw">return</span> dp[m][n]</div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: COMPLEXITY REFERENCE
+     ═══════════════════════════════════════════════════════ -->
+<div class="page" id="complexity">
+<h1>Complexity Reference</h1>
+<p class="subtitle">Visual comparison of growth rates and a complete operations table. Click any row for a code sample demonstrating that complexity.</p>
+
+<h2>Growth Rates Compared</h2>
+<p>Each bar shows relative operations for an input of n = 1,000. The difference between O(n) and O(n²) is a factor of 1,000×.</p>
+<div class="perf-bar-wrap">
+  <div class="perf-row"><span class="perf-label">O(1)</span><div class="perf-track"><div class="perf-fill" style="width:2%;background:var(--green);">1</div></div><span class="perf-eg">Array index access</span></div>
+  <div class="perf-row"><span class="perf-label">O(log n)</span><div class="perf-track"><div class="perf-fill" style="width:3%;background:var(--green);">~10</div></div><span class="perf-eg">Binary search</span></div>
+  <div class="perf-row"><span class="perf-label">O(n)</span><div class="perf-track"><div class="perf-fill" style="width:6%;background:var(--teal);">1,000</div></div><span class="perf-eg">Single for-loop</span></div>
+  <div class="perf-row"><span class="perf-label">O(n log n)</span><div class="perf-track"><div class="perf-fill" style="width:10%;background:#3b82f6;">~10,000</div></div><span class="perf-eg">Merge sort</span></div>
+  <div class="perf-row"><span class="perf-label">O(n²)</span><div class="perf-track"><div class="perf-fill" style="width:38%;background:var(--amber);">1,000,000</div></div><span class="perf-eg">Nested loops</span></div>
+  <div class="perf-row"><span class="perf-label">O(n³)</span><div class="perf-track"><div class="perf-fill" style="width:72%;background:#e55d3e;">1,000,000,000</div></div><span class="perf-eg">Triple nested</span></div>
+  <div class="perf-row"><span class="perf-label">O(2ⁿ)</span><div class="perf-track"><div class="perf-fill" style="width:100%;background:var(--rose);">overflow</div></div><span class="perf-eg">Recursive subsets</span></div>
+</div>
+
+<h2>Data Structure Operations</h2>
+<p>Click any row to see a code sample demonstrating that operation.</p>
+<div class="click-hint">Click a row → <span>view code sample</span></div>
+<table class="cx-table">
+  <thead><tr><th>Structure</th><th>Access</th><th>Search</th><th>Insert</th><th>Delete</th><th>Speed</th></tr></thead>
+  <tbody>
+    <tr class="cx-row" onclick="toggleExpand('ex-ds-array')">
+      <td><strong>Array</strong></td>
+      <td class="cx-complexity">O(1)</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n)</td>
+      <td><span class="cx-tag fast">Fast access</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-ds-array"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Access O(1):</strong> Elements are stored contiguously in memory. The address of element i is computed as base + i × size — no searching needed. <strong>Insert/Delete O(n):</strong> Inserting in the middle requires shifting all subsequent elements.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample">arr = [<span class="num">10</span>, <span class="num">20</span>, <span class="num">30</span>, <span class="num">40</span>, <span class="num">50</span>]
+
+<span class="cm"># Access — O(1)</span>
+val = arr[<span class="num">2</span>]            <span class="cm"># → 30 (instant, direct address)</span>
+
+<span class="cm"># Search — O(n)</span>
+idx = arr.index(<span class="num">40</span>)      <span class="cm"># scans left to right</span>
+
+<span class="cm"># Insert at index 1 — O(n), shifts [20,30,40,50] right</span>
+arr.insert(<span class="num">1</span>, <span class="num">15</span>)       <span class="cm"># → [10, 15, 20, 30, 40, 50]</span>
+
+<span class="cm"># Append at end — O(1) amortized</span>
+arr.append(<span class="num">60</span>)           <span class="cm"># → [10, 15, 20, 30, 40, 50, 60]</span></div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-ds-hashmap')">
+      <td><strong>Hash Map</strong></td>
+      <td class="cx-complexity">—</td><td class="cx-complexity">O(1)*</td><td class="cx-complexity">O(1)*</td><td class="cx-complexity">O(1)*</td>
+      <td><span class="cx-tag fast">Fast all</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-ds-hashmap"><td colspan="6"><div class="cx-expand-inner">
+      <p>* Average case. The hash function converts a key to an index, giving near-instant access. Worst case O(n) happens when all keys collide into one bucket — extremely rare with a good hash function. Python dicts and Java HashMaps are hash tables.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample">scores = {}
+
+<span class="cm"># Insert — O(1) average</span>
+scores[<span class="str">"alice"</span>] = <span class="num">95</span>
+scores[<span class="str">"bob"</span>] = <span class="num">82</span>
+
+<span class="cm"># Search / Access — O(1) average</span>
+<span class="fn">print</span>(scores[<span class="str">"alice"</span>])    <span class="cm"># → 95</span>
+<span class="fn">print</span>(<span class="str">"bob"</span> <span class="kw">in</span> scores)    <span class="cm"># → True  (membership test)</span>
+
+<span class="cm"># Delete — O(1) average</span>
+<span class="kw">del</span> scores[<span class="str">"bob"</span>]</div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-ds-heap')">
+      <td><strong>Heap</strong></td>
+      <td class="cx-complexity">—</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(log n)</td><td class="cx-complexity">O(log n)</td>
+      <td><span class="cx-tag ok">Fast min/max</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-ds-heap"><td colspan="6"><div class="cx-expand-inner">
+      <p>A heap gives you the smallest (or largest) element in O(1) via peek, and lets you insert or remove in O(log n) by "bubbling" up or down. Searching for an arbitrary element requires scanning the whole heap — O(n). Use when you repeatedly need the min or max element.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="kw">import</span> heapq
+
+heap = []
+heapq.<span class="fn">heappush</span>(heap, <span class="num">30</span>)    <span class="cm"># insert — O(log n)</span>
+heapq.<span class="fn">heappush</span>(heap, <span class="num">10</span>)
+heapq.<span class="fn">heappush</span>(heap, <span class="num">20</span>)
+
+<span class="fn">print</span>(heap[<span class="num">0</span>])               <span class="cm"># peek min — O(1) → 10</span>
+
+smallest = heapq.<span class="fn">heappop</span>(heap) <span class="cm"># extract min — O(log n) → 10</span>
+<span class="fn">print</span>(heap)                  <span class="cm"># → [20, 30]</span></div></div>
+    </div></td></tr>
+
+    <tr class="cx-row" onclick="toggleExpand('ex-ds-stack')">
+      <td><strong>Stack / Queue</strong></td>
+      <td class="cx-complexity">O(n)</td><td class="cx-complexity">O(n)</td><td class="cx-complexity">O(1)</td><td class="cx-complexity">O(1)</td>
+      <td><span class="cx-tag fast">Fast ends</span></td>
+    </tr>
+    <tr class="cx-expand" id="ex-ds-stack"><td colspan="6"><div class="cx-expand-inner">
+      <p><strong>Stack (LIFO):</strong> Push and pop from the top only — both O(1). Used for undo operations, DFS, and expression parsing. <strong>Queue (FIFO):</strong> Enqueue at back, dequeue from front — both O(1) with a deque. Used for BFS and task scheduling.</p>
+      <div class="lang-tabs"><button class="lang-tab active" onclick="switchLang(this,'python')">Python</button></div>
+      <div class="lang-panel active" data-lang="python"><div class="code-sample"><span class="cm"># Stack — use a list</span>
+stack = []
+stack.append(<span class="num">1</span>)        <span class="cm"># push — O(1)</span>
+stack.append(<span class="num">2</span>)
+top = stack.pop()      <span class="cm"># pop — O(1) → 2</span>
+
+<span class="cm"># Queue — use deque (list.pop(0) is O(n)!)</span>
+<span class="kw">from</span> collections <span class="kw">import</span> deque
+q = <span class="fn">deque</span>()
+q.append(<span class="num">1</span>)            <span class="cm"># enqueue — O(1)</span>
+q.append(<span class="num">2</span>)
+front = q.popleft()    <span class="cm"># dequeue — O(1) → 1</span></div></div>
+    </div></td></tr>
+  </tbody>
+</table>
+</div>
+
+</div><!-- end .wrap -->
+
+<script>
+// ── Page Navigation ──
+document.querySelectorAll('.top-nav .tnav').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.top-nav .tnav').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.p).classList.add('active');
+    window.scrollTo(0, 0);
+  });
+});
+
+// ── Toggle expand rows ──
+function toggleExpand(id) {
+  const row = document.getElementById(id);
+  const wasOpen = row.classList.contains('open');
+  // close all in same table
+  row.closest('table').querySelectorAll('.cx-expand').forEach(r => r.classList.remove('open'));
+  if (!wasOpen) row.classList.add('open');
+}
+
+// ── Language tabs inside expanded rows ──
+function switchLang(btn, lang) {
+  const container = btn.closest('.cx-expand-inner');
+  container.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.lang-panel').forEach(p => { p.classList.remove('active'); });
+  btn.classList.add('active');
+  container.querySelectorAll(`.lang-panel[data-lang="${lang}"]`).forEach(p => p.classList.add('active'));
+}
+
+// ── Tree traversal tabs ──
+function showTrav(btn, id) {
+  btn.closest('.card').querySelectorAll('.tnav').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.trav-panel').forEach(p => p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+
+// ── Bubble Sort Visualization ──
+const bubbleData = { arr: [64, 34, 25, 12, 22, 11, 90], step: 0, i: 0, j: 0, phase: 'compare', done: false, sortedCount: 0 };
+function renderBubble() {
+  const el = document.getElementById('bubble-display');
+  const { arr, j, sortedCount, done, phase } = bubbleData;
+  let html = '<div class="viz-row" style="justify-content:center;">';
+  arr.forEach((v, idx) => {
+    let cls = '';
+    if (done) cls = 'done';
+    else if (idx >= arr.length - sortedCount) cls = 'done';
+    else if (phase === 'compare' && (idx === j || idx === j + 1)) cls = 'compare';
+    else if (phase === 'swap' && (idx === j || idx === j + 1)) cls = 'active';
+    html += `<div class="cell ${cls}">${v}</div>`;
+  });
+  html += '</div>';
+  if (done) html += '<div class="viz-note" style="margin-left:0;text-align:center;color:var(--green);font-weight:600;">Sorted!</div>';
+  else {
+    const action = phase === 'compare'
+      ? `Comparing ${arr[j]} and ${arr[j+1]}${arr[j] > arr[j+1] ? ' → will swap' : ' → no swap needed'}`
+      : `Swapped!`;
+    html += `<div class="viz-note" style="margin-left:0;text-align:center;">${action}</div>`;
+  }
+  el.innerHTML = html;
+}
+function bubbleNext() {
+  if (bubbleData.done) return;
+  const { arr } = bubbleData;
+  const limit = arr.length - 1 - bubbleData.sortedCount;
+  if (bubbleData.phase === 'compare') {
+    if (arr[bubbleData.j] > arr[bubbleData.j + 1]) {
+      [arr[bubbleData.j], arr[bubbleData.j + 1]] = [arr[bubbleData.j + 1], arr[bubbleData.j]];
+      bubbleData.phase = 'swap';
+    } else {
+      bubbleData.j++;
+      if (bubbleData.j >= limit) { bubbleData.sortedCount++; bubbleData.j = 0; }
+      if (bubbleData.sortedCount >= arr.length - 1) bubbleData.done = true;
+    }
+  } else {
+    bubbleData.phase = 'compare';
+    bubbleData.j++;
+    if (bubbleData.j >= limit) { bubbleData.sortedCount++; bubbleData.j = 0; }
+    if (bubbleData.sortedCount >= arr.length - 1) bubbleData.done = true;
+  }
+  renderBubble();
+}
+function bubbleReset() {
+  Object.assign(bubbleData, { arr: [64, 34, 25, 12, 22, 11, 90], step: 0, i: 0, j: 0, phase: 'compare', done: false, sortedCount: 0 });
+  renderBubble();
+}
+renderBubble();
+
+// ── Binary Search Visualization ──
+const bsData = { arr: [3, 8, 15, 22, 33, 41, 56, 72, 89], target: 33, lo: 0, hi: 8, mid: -1, found: false, done: false };
+function renderBS() {
+  const el = document.getElementById('bs-display');
+  const { arr, lo, hi, mid, found, done, target } = bsData;
+  let html = `<div style="font-size:13px;color:var(--ink3);margin-bottom:10px;">Target: <strong style="color:var(--indigo);">${target}</strong> &nbsp; Range: [${lo}..${hi}]${mid >= 0 ? ` &nbsp; Mid: index ${mid} = ${arr[mid]}` : ''}</div>`;
+  html += '<div class="viz-row" style="justify-content:center;">';
+  arr.forEach((v, idx) => {
+    let cls = '';
+    if (found && idx === mid) cls = 'found';
+    else if (done && !found) cls = '';
+    else if (idx < lo || idx > hi) cls = 'elim';
+    else if (idx === mid) cls = 'mid';
+    html += `<div class="cell ${cls}">${v}</div>`;
+  });
+  html += '</div>';
+  if (found) html += '<div class="viz-note" style="margin-left:0;text-align:center;color:var(--teal);font-weight:600;">Found 33 at index 4!</div>';
+  else if (done) html += '<div class="viz-note" style="margin-left:0;text-align:center;color:var(--rose);">Not found.</div>';
+  else if (mid >= 0) {
+    const comparison = arr[mid] < target ? `${arr[mid]} < ${target} → search RIGHT half` : arr[mid] > target ? `${arr[mid]} > ${target} → search LEFT half` : '';
+    html += `<div class="viz-note" style="margin-left:0;text-align:center;">${comparison}</div>`;
+  }
+  el.innerHTML = html;
+}
+function bsNext() {
+  if (bsData.done) return;
+  const { arr, target } = bsData;
+  if (bsData.lo > bsData.hi) { bsData.done = true; renderBS(); return; }
+  const mid = Math.floor((bsData.lo + bsData.hi) / 2);
+  bsData.mid = mid;
+  if (arr[mid] === target) { bsData.found = true; bsData.done = true; }
+  else if (arr[mid] < target) { bsData.lo = mid + 1; }
+  else { bsData.hi = mid - 1; }
+  renderBS();
+}
+function bsReset() {
+  Object.assign(bsData, { lo: 0, hi: 8, mid: -1, found: false, done: false });
+  renderBS();
+}
+renderBS();
+</script>
+</body>
+</html>
