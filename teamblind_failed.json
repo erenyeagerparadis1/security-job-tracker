@@ -71,8 +71,8 @@
   },
   "1password": {
     "company": "1Password",
-    "fail_count": 33,
-    "last_failed_at": "2026-10-30T03:36:10Z"
+    "fail_count": 34,
+    "last_failed_at": "2026-11-01T03:19:05Z"
   },
   "1st central": {
     "company": "1st Central",
@@ -391,8 +391,8 @@
   },
   "abc fitness": {
     "company": "ABC Fitness",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-06T03:54:17Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:18:40Z"
   },
   "abca systems limited": {
     "company": "ABCA SYSTEMS LIMITED",
@@ -511,8 +511,8 @@
   },
   "acceldata": {
     "company": "Acceldata",
-    "fail_count": 2,
-    "last_failed_at": "2026-09-07T00:07:23Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:18:23Z"
   },
   "accelerant": {
     "company": "Accelerant",
@@ -541,8 +541,8 @@
   },
   "accenture australia": {
     "company": "Accenture Australia",
-    "fail_count": 55,
-    "last_failed_at": "2026-10-31T03:21:21Z"
+    "fail_count": 56,
+    "last_failed_at": "2026-11-01T03:19:33Z"
   },
   "accenture middle east": {
     "company": "Accenture Middle East",
@@ -836,8 +836,8 @@
   },
   "activision": {
     "company": "Activision",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-12T03:21:42Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:48Z"
   },
   "acumenis": {
     "company": "Acumenis",
@@ -941,13 +941,13 @@
   },
   "adesso business consulting ag": {
     "company": "adesso business consulting AG",
-    "fail_count": 16,
-    "last_failed_at": "2026-10-11T02:59:21Z"
+    "fail_count": 18,
+    "last_failed_at": "2026-11-01T03:20:01Z"
   },
   "adesso se": {
     "company": "adesso SE",
-    "fail_count": 194,
-    "last_failed_at": "2026-10-30T03:37:45Z"
+    "fail_count": 235,
+    "last_failed_at": "2026-11-01T03:20:12Z"
   },
   "adfinis": {
     "company": "Adfinis",
@@ -958,6 +958,11 @@
     "company": "ADG",
     "fail_count": 2,
     "last_failed_at": "2026-10-23T02:38:40Z"
+  },
+  "adga group": {
+    "company": "ADGA Group",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:04Z"
   },
   "adi global distribution": {
     "company": "ADI Global Distribution",
@@ -1283,6 +1288,11 @@
     "company": "Agents Stack",
     "fail_count": 2,
     "last_failed_at": "2026-08-31T00:03:41Z"
+  },
+  "agile enerzuna online": {
+    "company": "AGILE ENERZUNA Online",
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "agileengine": {
     "company": "AgileEngine",
@@ -1661,8 +1671,8 @@
   },
   "al salah holding": {
     "company": "Al Salah Holding",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-08T03:40:40Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "al tayer insignia": {
     "company": "Al Tayer Insignia",
@@ -2184,6 +2194,11 @@
     "fail_count": 4,
     "last_failed_at": "2026-10-31T03:21:22Z"
   },
+  "alp (computational finance, ai and data engineering)": {
+    "company": "ALP (Computational Finance, AI and Data Engineering)",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:29Z"
+  },
   "alp consulting ltd.": {
     "company": "Alp Consulting Ltd.",
     "fail_count": 3,
@@ -2371,8 +2386,8 @@
   },
   "amazon": {
     "company": "Amazon",
-    "fail_count": 185,
-    "last_failed_at": "2026-10-31T03:21:03Z"
+    "fail_count": 187,
+    "last_failed_at": "2026-11-01T03:18:32Z"
   },
   "amazon science": {
     "company": "Amazon Science",
@@ -2566,8 +2581,8 @@
   },
   "amyantek": {
     "company": "Amyantek",
-    "fail_count": 6,
-    "last_failed_at": "2026-09-30T03:04:09Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:02Z"
   },
   "an post": {
     "company": "An Post",
@@ -2698,6 +2713,11 @@
     "company": "Anove",
     "fail_count": 1,
     "last_failed_at": "2026-10-10T03:26:38Z"
+  },
+  "anovia inc.": {
+    "company": "Anovia Inc.",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:03Z"
   },
   "anradus pte ltd": {
     "company": "Anradus Pte Ltd",
@@ -2871,8 +2891,8 @@
   },
   "apex systems": {
     "company": "Apex Systems",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-08T03:38:24Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:10Z"
   },
   "apexon": {
     "company": "Apexon",
@@ -2951,8 +2971,8 @@
   },
   "apple": {
     "company": "Apple",
-    "fail_count": 43,
-    "last_failed_at": "2026-10-30T03:35:52Z"
+    "fail_count": 45,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "applied computing": {
     "company": "Applied Computing",
@@ -3006,8 +3026,8 @@
   },
   "appvia": {
     "company": "Appvia",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-22T02:32:16Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:25Z"
   },
   "appviewx": {
     "company": "AppViewX",
@@ -3016,8 +3036,8 @@
   },
   "apriori - business solutions ag": {
     "company": "APRIORI - business solutions AG",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-06T00:08:44Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:00Z"
   },
   "apriori technologies": {
     "company": "aPriori Technologies",
@@ -3026,8 +3046,8 @@
   },
   "apt-one": {
     "company": "APT-ONE",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-02T03:14:23Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:59Z"
   },
   "aptagrim limited": {
     "company": "Aptagrim Limited",
@@ -3046,8 +3066,8 @@
   },
   "aptiv": {
     "company": "Aptiv",
-    "fail_count": 14,
-    "last_failed_at": "2026-10-17T02:10:37Z"
+    "fail_count": 15,
+    "last_failed_at": "2026-11-01T03:19:05Z"
   },
   "aptly": {
     "company": "Aptly",
@@ -3206,8 +3226,8 @@
   },
   "archer": {
     "company": "Archer",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-31T03:20:56Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "archer integrated risk management": {
     "company": "Archer Integrated Risk Management",
@@ -3551,8 +3571,8 @@
   },
   "asana": {
     "company": "Asana",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-31T03:20:39Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:08Z"
   },
   "asc pty ltd": {
     "company": "ASC Pty Ltd",
@@ -3616,8 +3636,8 @@
   },
   "asml": {
     "company": "ASML",
-    "fail_count": 22,
-    "last_failed_at": "2026-10-22T02:33:07Z"
+    "fail_count": 23,
+    "last_failed_at": "2026-11-01T03:19:42Z"
   },
   "asn bank": {
     "company": "ASN Bank",
@@ -3751,8 +3771,8 @@
   },
   "astreya": {
     "company": "Astreya",
-    "fail_count": 32,
-    "last_failed_at": "2026-10-31T03:21:50Z"
+    "fail_count": 33,
+    "last_failed_at": "2026-11-01T03:18:48Z"
   },
   "astro": {
     "company": "Astro",
@@ -3811,8 +3831,8 @@
   },
   "atb financial": {
     "company": "ATB Financial",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-31T03:20:46Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "atech cloud": {
     "company": "Atech Cloud",
@@ -3881,8 +3901,8 @@
   },
   "atlassian": {
     "company": "Atlassian",
-    "fail_count": 15,
-    "last_failed_at": "2026-10-16T02:19:01Z"
+    "fail_count": 17,
+    "last_failed_at": "2026-11-01T03:19:35Z"
   },
   "atmail": {
     "company": "Atmail",
@@ -4661,8 +4681,8 @@
   },
   "baker tilly us": {
     "company": "Baker Tilly US",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-25T02:21:09Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:18:19Z"
   },
   "balance recruitment and balance consulting": {
     "company": "Balance Recruitment and Balance Consulting",
@@ -5551,8 +5571,8 @@
   },
   "bitgo": {
     "company": "BitGo",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-19T02:26:35Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "bitmarck": {
     "company": "BITMARCK",
@@ -5561,8 +5581,8 @@
   },
   "bitvavo": {
     "company": "Bitvavo",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-10T03:26:36Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "bitwarden": {
     "company": "Bitwarden",
@@ -5611,8 +5631,8 @@
   },
   "blackbaud india": {
     "company": "Blackbaud India",
-    "fail_count": 17,
-    "last_failed_at": "2026-10-31T03:19:50Z"
+    "fail_count": 19,
+    "last_failed_at": "2026-11-01T03:18:40Z"
   },
   "blackberry": {
     "company": "BlackBerry",
@@ -5671,8 +5691,8 @@
   },
   "blackrock": {
     "company": "BlackRock",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-29T03:34:12Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:28Z"
   },
   "blackstone eit": {
     "company": "BlackStone eIT",
@@ -5841,8 +5861,8 @@
   },
   "bluevoyant": {
     "company": "BlueVoyant",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-10T03:25:55Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:19:16Z"
   },
   "blumetra solutions": {
     "company": "Blumetra Solutions",
@@ -5856,8 +5876,8 @@
   },
   "bmc": {
     "company": "BMC",
-    "fail_count": 2,
-    "last_failed_at": "2026-09-23T02:30:07Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "bmc software": {
     "company": "BMC Software",
@@ -5873,6 +5893,11 @@
     "company": "BME - Building Materials Europe",
     "fail_count": 2,
     "last_failed_at": "2026-10-31T03:21:27Z"
+  },
+  "bmi deutschland": {
+    "company": "BMI Deutschland",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:08Z"
   },
   "bmo capital markets": {
     "company": "BMO Capital Markets",
@@ -5893,6 +5918,11 @@
     "company": "Board Intelligence",
     "fail_count": 1,
     "last_failed_at": "2026-10-13T04:35:49Z"
+  },
+  "bodyshop services (maidstone) limited": {
+    "company": "BODYSHOP SERVICES (MAIDSTONE) LIMITED",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "boehringer ingelheim": {
     "company": "Boehringer Ingelheim",
@@ -6281,8 +6311,8 @@
   },
   "bright purple": {
     "company": "Bright Purple",
-    "fail_count": 2,
-    "last_failed_at": "2026-09-29T03:22:12Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:25Z"
   },
   "brightlyn": {
     "company": "Brightlyn",
@@ -6456,8 +6486,8 @@
   },
   "bt group": {
     "company": "BT Group",
-    "fail_count": 33,
-    "last_failed_at": "2026-10-31T03:21:07Z"
+    "fail_count": 36,
+    "last_failed_at": "2026-11-01T03:19:30Z"
   },
   "bti executive search": {
     "company": "BTI Executive Search",
@@ -6606,8 +6636,8 @@
   },
   "bureau of meteorology": {
     "company": "Bureau of Meteorology",
-    "fail_count": 16,
-    "last_failed_at": "2026-10-31T03:21:13Z"
+    "fail_count": 18,
+    "last_failed_at": "2026-11-01T03:19:36Z"
   },
   "bureau veritas": {
     "company": "Bureau Veritas",
@@ -6628,6 +6658,11 @@
     "company": "Burendo",
     "fail_count": 2,
     "last_failed_at": "2026-10-23T02:37:01Z"
+  },
+  "burgess-manning": {
+    "company": "Burgess-Manning",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "burnco rock products ltd": {
     "company": "BURNCO Rock Products Ltd",
@@ -6791,8 +6826,8 @@
   },
   "caa club group": {
     "company": "CAA Club Group",
-    "fail_count": 5,
-    "last_failed_at": "2026-10-06T03:55:21Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "caa niagara": {
     "company": "CAA Niagara",
@@ -6841,13 +6876,13 @@
   },
   "cae": {
     "company": "CAE",
-    "fail_count": 17,
-    "last_failed_at": "2026-10-23T02:36:37Z"
+    "fail_count": 19,
+    "last_failed_at": "2026-11-01T03:19:04Z"
   },
   "cai software, llc": {
     "company": "CAI Software, LLC",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-15T02:24:38Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:18:30Z"
   },
   "cais": {
     "company": "CAIS",
@@ -7146,8 +7181,8 @@
   },
   "cardinal health": {
     "company": "Cardinal Health",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-10T03:24:07Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:18:18Z"
   },
   "career executive 赛睿人力资源": {
     "company": "Career Executive 赛睿人力资源",
@@ -7196,8 +7231,8 @@
   },
   "cargill": {
     "company": "Cargill",
-    "fail_count": 14,
-    "last_failed_at": "2026-10-22T02:30:50Z"
+    "fail_count": 16,
+    "last_failed_at": "2026-11-01T03:18:30Z"
   },
   "cargox": {
     "company": "CargoX",
@@ -7321,8 +7356,8 @@
   },
   "catawiki": {
     "company": "Catawiki",
-    "fail_count": 20,
-    "last_failed_at": "2026-10-31T03:21:34Z"
+    "fail_count": 24,
+    "last_failed_at": "2026-11-01T03:19:42Z"
   },
   "cathcart technology": {
     "company": "Cathcart Technology",
@@ -7661,8 +7696,8 @@
   },
   "chainlink labs": {
     "company": "Chainlink Labs",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-22T02:32:00Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "chalk": {
     "company": "Chalk",
@@ -8699,6 +8734,11 @@
     "fail_count": 2,
     "last_failed_at": "2026-10-28T03:07:51Z"
   },
+  "coletivo 45+": {
+    "company": "Coletivo 45+",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:13Z"
+  },
   "collabera": {
     "company": "Collabera",
     "fail_count": 9,
@@ -8806,8 +8846,8 @@
   },
   "commercetools": {
     "company": "commercetools",
-    "fail_count": 18,
-    "last_failed_at": "2026-10-31T03:22:13Z"
+    "fail_count": 19,
+    "last_failed_at": "2026-11-01T03:20:05Z"
   },
   "commercial bank international": {
     "company": "Commercial Bank International",
@@ -9381,8 +9421,8 @@
   },
   "cornerstone ondemand": {
     "company": "Cornerstone OnDemand",
-    "fail_count": 14,
-    "last_failed_at": "2026-10-25T02:21:29Z"
+    "fail_count": 15,
+    "last_failed_at": "2026-11-01T03:18:40Z"
   },
   "coroplast group": {
     "company": "Coroplast Group",
@@ -9541,8 +9581,8 @@
   },
   "cpl": {
     "company": "Cpl",
-    "fail_count": 26,
-    "last_failed_at": "2026-10-31T03:21:47Z"
+    "fail_count": 30,
+    "last_failed_at": "2026-11-01T03:19:48Z"
   },
   "cplace": {
     "company": "cplace",
@@ -10101,8 +10141,8 @@
   },
   "cybex": {
     "company": "CYBEX",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-21T02:37:28Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:57Z"
   },
   "cycap": {
     "company": "CYCAP",
@@ -10886,8 +10926,8 @@
   },
   "deriv": {
     "company": "Deriv",
-    "fail_count": 46,
-    "last_failed_at": "2026-10-31T03:20:31Z"
+    "fail_count": 50,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "dermagnostix": {
     "company": "Dermagnostix",
@@ -11026,8 +11066,8 @@
   },
   "devrev": {
     "company": "DevRev",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-25T02:21:32Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:18:44Z"
   },
   "devwork_test": {
     "company": "Devwork_Test",
@@ -11406,8 +11446,8 @@
   },
   "discovered mena": {
     "company": "Discovered MENA",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-28T03:09:02Z"
+    "fail_count": 10,
+    "last_failed_at": "2026-11-01T03:20:13Z"
   },
   "discoverit recruitment": {
     "company": "DiscoverIT Recruitment",
@@ -11436,8 +11476,8 @@
   },
   "distribusion technologies": {
     "company": "Distribusion Technologies",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-11T02:59:28Z"
+    "fail_count": 11,
+    "last_failed_at": "2026-11-01T03:20:05Z"
   },
   "distyl": {
     "company": "Distyl",
@@ -11581,8 +11621,8 @@
   },
   "doda (デューダ)": {
     "company": "doda (デューダ)",
-    "fail_count": 833,
-    "last_failed_at": "2026-10-30T03:37:37Z"
+    "fail_count": 835,
+    "last_failed_at": "2026-11-01T03:19:54Z"
   },
   "dodoai inc.": {
     "company": "dodoAI Inc.",
@@ -11801,8 +11841,8 @@
   },
   "drw": {
     "company": "DRW",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-29T03:34:06Z"
+    "fail_count": 12,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "dräger": {
     "company": "Dräger",
@@ -12161,8 +12201,8 @@
   },
   "eaton": {
     "company": "Eaton",
-    "fail_count": 2,
-    "last_failed_at": "2026-09-20T02:26:20Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "ebcont": {
     "company": "EBCONT",
@@ -12621,8 +12661,8 @@
   },
   "elevenlabs": {
     "company": "ElevenLabs",
-    "fail_count": 21,
-    "last_failed_at": "2026-10-24T02:35:01Z"
+    "fail_count": 22,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "elfonze technologies": {
     "company": "Elfonze Technologies",
@@ -12868,6 +12908,11 @@
     "company": "Empower India",
     "fail_count": 11,
     "last_failed_at": "2026-10-23T02:35:13Z"
+  },
+  "empower pulse": {
+    "company": "Empower Pulse",
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "empowered careers": {
     "company": "EmpowerED Careers",
@@ -13266,8 +13311,8 @@
   },
   "epsilon": {
     "company": "Epsilon",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-30T03:35:12Z"
+    "fail_count": 12,
+    "last_failed_at": "2026-11-01T03:18:30Z"
   },
   "epsilon 3": {
     "company": "Epsilon 3",
@@ -13441,8 +13486,8 @@
   },
   "esker": {
     "company": "Esker",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-21T02:34:47Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:18:59Z"
   },
   "esl faceit group - efg": {
     "company": "ESL FACEIT Group - EFG",
@@ -13566,8 +13611,8 @@
   },
   "eucalyptus": {
     "company": "Eucalyptus",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-26T02:22:17Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "eucloid data solutions": {
     "company": "Eucloid Data Solutions",
@@ -13581,8 +13626,8 @@
   },
   "euna solutions": {
     "company": "Euna Solutions",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-23T02:36:24Z"
+    "fail_count": 10,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "euro mechanical": {
     "company": "Euro Mechanical",
@@ -13606,8 +13651,8 @@
   },
   "eurofiber": {
     "company": "Eurofiber",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-21T02:36:16Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "eurofins": {
     "company": "Eurofins",
@@ -13678,6 +13723,11 @@
     "company": "EverAI",
     "fail_count": 2,
     "last_failed_at": "2026-10-22T02:33:41Z"
+  },
+  "everbridge": {
+    "company": "Everbridge",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:18Z"
   },
   "evercommerce": {
     "company": "EverCommerce",
@@ -13911,8 +13961,8 @@
   },
   "experis uk": {
     "company": "Experis UK",
-    "fail_count": 44,
-    "last_failed_at": "2026-10-28T03:07:26Z"
+    "fail_count": 45,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "experteq": {
     "company": "Experteq",
@@ -13971,8 +14021,8 @@
   },
   "eye security": {
     "company": "Eye Security",
-    "fail_count": 41,
-    "last_failed_at": "2026-10-22T02:33:46Z"
+    "fail_count": 43,
+    "last_failed_at": "2026-11-01T03:19:42Z"
   },
   "eye-able": {
     "company": "Eye-Able",
@@ -14051,8 +14101,8 @@
   },
   "faculty": {
     "company": "Faculty",
-    "fail_count": 12,
-    "last_failed_at": "2026-10-25T02:22:13Z"
+    "fail_count": 13,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "fagron": {
     "company": "Fagron",
@@ -14246,8 +14296,8 @@
   },
   "ferlab": {
     "company": "FerLab",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-05T03:05:11Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:14Z"
   },
   "fernwood fitness": {
     "company": "Fernwood Fitness",
@@ -14326,13 +14376,13 @@
   },
   "filigran": {
     "company": "Filigran",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-05T03:06:12Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "fin": {
     "company": "Fin",
-    "fail_count": 48,
-    "last_failed_at": "2026-10-26T02:22:42Z"
+    "fail_count": 49,
+    "last_failed_at": "2026-11-01T03:19:47Z"
   },
   "finacplus": {
     "company": "FinacPlus",
@@ -14356,8 +14406,8 @@
   },
   "finanz informatik technologie service": {
     "company": "Finanz Informatik Technologie Service",
-    "fail_count": 26,
-    "last_failed_at": "2026-10-31T03:22:06Z"
+    "fail_count": 27,
+    "last_failed_at": "2026-11-01T03:19:59Z"
   },
   "finclear": {
     "company": "FinClear",
@@ -14551,8 +14601,8 @@
   },
   "fis": {
     "company": "FIS",
-    "fail_count": 16,
-    "last_failed_at": "2026-10-31T03:19:28Z"
+    "fail_count": 17,
+    "last_failed_at": "2026-11-01T03:19:35Z"
   },
   "fis informationssysteme und consulting gmbh": {
     "company": "FIS Informationssysteme und Consulting GmbH",
@@ -14681,8 +14731,8 @@
   },
   "flexport": {
     "company": "Flexport",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-21T02:36:29Z"
+    "fail_count": 10,
+    "last_failed_at": "2026-11-01T03:19:38Z"
   },
   "flexspring": {
     "company": "Flexspring",
@@ -14691,8 +14741,8 @@
   },
   "flexstaf i.t. inc.": {
     "company": "Flexstaf I.T. Inc.",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-31T03:20:48Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:19:13Z"
   },
   "flextrade": {
     "company": "FlexTrade",
@@ -15156,8 +15206,8 @@
   },
   "frazier & deeter": {
     "company": "Frazier & Deeter",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-10T03:24:38Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:18:38Z"
   },
   "freedom consulting inc.": {
     "company": "Freedom Consulting Inc.",
@@ -15211,8 +15261,8 @@
   },
   "fresha": {
     "company": "Fresha",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-18T02:11:00Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:21Z"
   },
   "freshfields": {
     "company": "Freshfields",
@@ -15331,8 +15381,8 @@
   },
   "fullscript": {
     "company": "Fullscript",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-30T03:04:04Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:14Z"
   },
   "fullstack": {
     "company": "FullStack",
@@ -15383,6 +15433,11 @@
     "company": "Fusion5",
     "fail_count": 12,
     "last_failed_at": "2026-09-29T03:24:27Z"
+  },
+  "future cloud technologies": {
+    "company": "Future Cloud Technologies",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:05Z"
   },
   "future group": {
     "company": "Future Group",
@@ -15511,8 +15566,8 @@
   },
   "gainsight": {
     "company": "Gainsight",
-    "fail_count": 13,
-    "last_failed_at": "2026-10-31T03:19:46Z"
+    "fail_count": 15,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "gainwell technologies": {
     "company": "Gainwell Technologies",
@@ -15581,8 +15636,8 @@
   },
   "gamma": {
     "company": "Gamma",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-21T02:35:38Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:19:21Z"
   },
   "gamma de": {
     "company": "Gamma DE",
@@ -15716,8 +15771,8 @@
   },
   "ge healthcare": {
     "company": "GE HealthCare",
-    "fail_count": 20,
-    "last_failed_at": "2026-10-30T03:35:12Z"
+    "fail_count": 22,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "gea group": {
     "company": "GEA Group",
@@ -15911,8 +15966,8 @@
   },
   "genesys": {
     "company": "Genesys",
-    "fail_count": 27,
-    "last_failed_at": "2026-10-22T02:31:14Z"
+    "fail_count": 28,
+    "last_failed_at": "2026-11-01T03:19:48Z"
   },
   "genetec": {
     "company": "Genetec",
@@ -16251,8 +16306,8 @@
   },
   "global payments inc.": {
     "company": "Global Payments Inc.",
-    "fail_count": 18,
-    "last_failed_at": "2026-10-28T03:09:07Z"
+    "fail_count": 19,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "global petroleum business & trading": {
     "company": "Global Petroleum Business & Trading",
@@ -16266,8 +16321,8 @@
   },
   "global relay": {
     "company": "Global Relay",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-19T02:27:08Z"
+    "fail_count": 13,
+    "last_failed_at": "2026-11-01T03:19:08Z"
   },
   "global resourcing": {
     "company": "Global Resourcing",
@@ -16318,6 +16373,11 @@
     "company": "GlobalGuard",
     "fail_count": 3,
     "last_failed_at": "2026-10-27T02:56:28Z"
+  },
+  "globaljobfeed": {
+    "company": "GlobalJobFeed",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:25Z"
   },
   "globalstyle": {
     "company": "Globalstyle",
@@ -16411,8 +16471,8 @@
   },
   "golden opportunities": {
     "company": "Golden Opportunities",
-    "fail_count": 21,
-    "last_failed_at": "2026-10-28T03:06:27Z"
+    "fail_count": 23,
+    "last_failed_at": "2026-11-01T03:18:35Z"
   },
   "golden technology": {
     "company": "Golden Technology",
@@ -16571,13 +16631,13 @@
   },
   "grant thornton netherlands": {
     "company": "Grant Thornton Netherlands",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-10T03:26:40Z"
+    "fail_count": 10,
+    "last_failed_at": "2026-11-01T03:19:42Z"
   },
   "grant thornton uk": {
     "company": "Grant Thornton UK",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-18T02:11:02Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:19:30Z"
   },
   "graphcore": {
     "company": "Graphcore",
@@ -16661,8 +16721,8 @@
   },
   "green start management consultancy": {
     "company": "Green Start Management Consultancy",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-20T02:26:20Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:18:44Z"
   },
   "greencross pet wellness company": {
     "company": "Greencross Pet Wellness Company",
@@ -16938,6 +16998,11 @@
     "company": "GulfIT Network Distribution",
     "fail_count": 1,
     "last_failed_at": "2026-09-16T02:28:00Z"
+  },
+  "gurobi optimization": {
+    "company": "Gurobi Optimization",
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:20:07Z"
   },
   "gushcloud international": {
     "company": "Gushcloud International",
@@ -17286,8 +17351,8 @@
   },
   "harman india": {
     "company": "HARMAN India",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-30T03:35:10Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:18:19Z"
   },
   "harmonic": {
     "company": "Harmonic",
@@ -17356,8 +17421,8 @@
   },
   "harvey": {
     "company": "Harvey",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-07T00:07:14Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:13Z"
   },
   "hasbro": {
     "company": "Hasbro",
@@ -17573,6 +17638,11 @@
     "company": "Hectronic GmbH",
     "fail_count": 1,
     "last_failed_at": "2026-09-09T00:09:47Z"
+  },
+  "heddlu dyfed-powys police": {
+    "company": "Heddlu Dyfed-Powys Police",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:22Z"
   },
   "hedgeserv": {
     "company": "HedgeServ",
@@ -17986,8 +18056,8 @@
   },
   "hitachi energy": {
     "company": "Hitachi Energy",
-    "fail_count": 23,
-    "last_failed_at": "2026-10-29T03:33:02Z"
+    "fail_count": 25,
+    "last_failed_at": "2026-11-01T03:18:46Z"
   },
   "hitachi high-tech corporation": {
     "company": "Hitachi High-Tech Corporation",
@@ -18091,8 +18161,8 @@
   },
   "hollander techniek b.v.": {
     "company": "Hollander Techniek B.V.",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-29T03:34:41Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "home24 se": {
     "company": "home24 SE",
@@ -18103,6 +18173,11 @@
     "company": "Homebase",
     "fail_count": 1,
     "last_failed_at": "2026-09-27T02:35:22Z"
+  },
+  "homeequity bank": {
+    "company": "HomeEquity Bank",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:02Z"
   },
   "hometogo": {
     "company": "HomeToGo",
@@ -18146,8 +18221,8 @@
   },
   "horizon3.ai": {
     "company": "Horizon3.ai",
-    "fail_count": 5,
-    "last_failed_at": "2026-10-10T03:27:03Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:18:52Z"
   },
   "horizonone recruitment": {
     "company": "HorizonOne Recruitment",
@@ -18458,6 +18533,11 @@
     "company": "hyperexponential",
     "fail_count": 2,
     "last_failed_at": "2026-10-25T02:22:18Z"
+  },
+  "hyperlayer": {
+    "company": "Hyperlayer",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:24Z"
   },
   "hyperproof": {
     "company": "Hyperproof",
@@ -18941,8 +19021,8 @@
   },
   "imc trading": {
     "company": "IMC Trading",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-10T03:26:21Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:35Z"
   },
   "imda": {
     "company": "IMDA",
@@ -19271,8 +19351,8 @@
   },
   "infor": {
     "company": "Infor",
-    "fail_count": 25,
-    "last_failed_at": "2026-10-31T03:19:41Z"
+    "fail_count": 27,
+    "last_failed_at": "2026-11-01T03:18:41Z"
   },
   "informatech pty ltd": {
     "company": "Informatech Pty Ltd",
@@ -19946,8 +20026,8 @@
   },
   "investissement québec": {
     "company": "Investissement Québec",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-31T03:20:36Z"
+    "fail_count": 12,
+    "last_failed_at": "2026-11-01T03:19:02Z"
   },
   "investitionsbank schleswig-holstein (ib.sh)": {
     "company": "Investitionsbank Schleswig-Holstein (IB.SH)",
@@ -20821,8 +20901,8 @@
   },
   "johnson matthey": {
     "company": "Johnson Matthey",
-    "fail_count": 22,
-    "last_failed_at": "2026-10-24T02:34:15Z"
+    "fail_count": 26,
+    "last_failed_at": "2026-11-01T03:18:59Z"
   },
   "jolera": {
     "company": "Jolera",
@@ -21061,8 +21141,8 @@
   },
   "kainos": {
     "company": "Kainos",
-    "fail_count": 42,
-    "last_failed_at": "2026-10-21T02:35:36Z"
+    "fail_count": 43,
+    "last_failed_at": "2026-11-01T03:19:24Z"
   },
   "kaishi partners": {
     "company": "Kaishi Partners",
@@ -21426,8 +21506,8 @@
   },
   "kinexus australia": {
     "company": "Kinexus Australia",
-    "fail_count": 16,
-    "last_failed_at": "2026-10-30T03:36:55Z"
+    "fail_count": 17,
+    "last_failed_at": "2026-11-01T03:19:33Z"
   },
   "kinfitz & co.": {
     "company": "KinFitz & Co.",
@@ -21551,8 +21631,8 @@
   },
   "klipboard": {
     "company": "Klipboard",
-    "fail_count": 1,
-    "last_failed_at": "2026-08-29T00:03:47Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:21Z"
   },
   "klm royal dutch airlines": {
     "company": "KLM Royal Dutch Airlines",
@@ -21786,8 +21866,8 @@
   },
   "kpmgジャパン／kpmg japan": {
     "company": "KPMGジャパン／KPMG Japan",
-    "fail_count": 10,
-    "last_failed_at": "2026-10-10T03:27:08Z"
+    "fail_count": 11,
+    "last_failed_at": "2026-11-01T03:19:54Z"
   },
   "kraft heinz": {
     "company": "Kraft Heinz",
@@ -21896,8 +21976,13 @@
   },
   "kyowa kirin co., ltd.": {
     "company": "Kyowa Kirin Co., Ltd.",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-10T03:27:00Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:19:50Z"
+  },
+  "kyowa kirin emea": {
+    "company": "Kyowa Kirin EMEA",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:16Z"
   },
   "kyowa kirin international plc.": {
     "company": "Kyowa Kirin International plc.",
@@ -21941,8 +22026,13 @@
   },
   "la caisse (caisse de dépôt et placement du québec)": {
     "company": "La Caisse (Caisse de dépôt et placement du Québec)",
-    "fail_count": 22,
-    "last_failed_at": "2026-10-29T03:33:49Z"
+    "fail_count": 23,
+    "last_failed_at": "2026-11-01T03:19:07Z"
+  },
+  "la maison simons": {
+    "company": "La Maison Simons",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:04Z"
   },
   "lab digital": {
     "company": "Lab Digital",
@@ -22093,6 +22183,11 @@
     "company": "Laserfiche",
     "fail_count": 8,
     "last_failed_at": "2026-10-22T02:33:14Z"
+  },
+  "lassonde": {
+    "company": "Lassonde",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:05Z"
   },
   "lastpass": {
     "company": "LastPass",
@@ -22571,8 +22666,8 @@
   },
   "lichtblick se": {
     "company": "LichtBlick SE",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-24T02:35:12Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:20:08Z"
   },
   "liebherr aerospace and transportation": {
     "company": "Liebherr Aerospace and Transportation",
@@ -22621,8 +22716,8 @@
   },
   "lightspeed commerce": {
     "company": "Lightspeed Commerce",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-10T03:25:42Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:19:08Z"
   },
   "likewize": {
     "company": "Likewize",
@@ -23056,8 +23151,8 @@
   },
   "loto-québec": {
     "company": "Loto-Québec",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-29T03:33:54Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:14Z"
   },
   "lotus it solutions": {
     "company": "Lotus IT Solutions",
@@ -23146,8 +23241,8 @@
   },
   "lumen technologies": {
     "company": "Lumen Technologies",
-    "fail_count": 13,
-    "last_failed_at": "2026-10-17T02:11:02Z"
+    "fail_count": 14,
+    "last_failed_at": "2026-11-01T03:18:21Z"
   },
   "lumentum": {
     "company": "Lumentum",
@@ -23246,8 +23341,8 @@
   },
   "m group": {
     "company": "M Group",
-    "fail_count": 15,
-    "last_failed_at": "2026-10-31T03:20:54Z"
+    "fail_count": 16,
+    "last_failed_at": "2026-11-01T03:19:18Z"
   },
   "m&g": {
     "company": "M&G",
@@ -23689,6 +23784,11 @@
     "fail_count": 3,
     "last_failed_at": "2026-10-09T03:46:27Z"
   },
+  "mardamed healthcare": {
+    "company": "Mardamed Healthcare",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:20Z"
+  },
   "marex": {
     "company": "Marex",
     "fail_count": 1,
@@ -23766,8 +23866,8 @@
   },
   "marqeta": {
     "company": "Marqeta",
-    "fail_count": 10,
-    "last_failed_at": "2026-10-12T03:21:49Z"
+    "fail_count": 11,
+    "last_failed_at": "2026-11-01T03:19:10Z"
   },
   "marriott tech accelerator": {
     "company": "Marriott Tech Accelerator",
@@ -23806,8 +23906,8 @@
   },
   "marvell technology": {
     "company": "Marvell Technology",
-    "fail_count": 15,
-    "last_failed_at": "2026-10-23T02:35:24Z"
+    "fail_count": 18,
+    "last_failed_at": "2026-11-01T03:18:24Z"
   },
   "marvelx ai": {
     "company": "MarvelX AI",
@@ -24301,8 +24401,8 @@
   },
   "medpace": {
     "company": "Medpace",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-11T02:58:25Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:16Z"
   },
   "meesho": {
     "company": "Meesho",
@@ -24514,6 +24614,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-08-26T03:37:36Z"
   },
+  "mesh": {
+    "company": "Mesh",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:23Z"
+  },
   "mesh cyber": {
     "company": "Mesh Cyber",
     "fail_count": 1,
@@ -24576,8 +24681,8 @@
   },
   "methods": {
     "company": "Methods",
-    "fail_count": 27,
-    "last_failed_at": "2026-10-30T03:36:28Z"
+    "fail_count": 28,
+    "last_failed_at": "2026-11-01T03:19:16Z"
   },
   "metito utilities": {
     "company": "Metito Utilities",
@@ -25326,8 +25431,8 @@
   },
   "morgan mckinley": {
     "company": "Morgan McKinley",
-    "fail_count": 41,
-    "last_failed_at": "2026-10-30T03:37:14Z"
+    "fail_count": 42,
+    "last_failed_at": "2026-11-01T03:18:52Z"
   },
   "moring ai": {
     "company": "Moring AI",
@@ -25406,8 +25511,8 @@
   },
   "motive": {
     "company": "Motive",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-23T02:36:42Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:19:01Z"
   },
   "motor ai": {
     "company": "MOTOR Ai",
@@ -25553,6 +25658,11 @@
     "company": "MSP Hitect",
     "fail_count": 1,
     "last_failed_at": "2026-09-24T02:18:00Z"
+  },
+  "mtc - global car exporters": {
+    "company": "MTC - Global Car Exporters",
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "mtc - manufacturing technology centre": {
     "company": "MTC - Manufacturing Technology Centre",
@@ -26121,8 +26231,8 @@
   },
   "neev": {
     "company": "Neev",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-24T02:33:52Z"
+    "fail_count": 12,
+    "last_failed_at": "2026-11-01T03:18:43Z"
   },
   "neilson financial services": {
     "company": "Neilson Financial Services",
@@ -26236,8 +26346,8 @@
   },
   "netcompany": {
     "company": "Netcompany",
-    "fail_count": 5,
-    "last_failed_at": "2026-10-09T03:44:16Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "netelastic technologies": {
     "company": "NetElastic Technologies",
@@ -26761,8 +26871,8 @@
   },
   "nirvana insurance": {
     "company": "Nirvana Insurance",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-10T03:24:22Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:18:30Z"
   },
   "nisus australia": {
     "company": "Nisus Australia",
@@ -26899,6 +27009,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-10-26T02:23:13Z"
   },
+  "nordson corporation": {
+    "company": "Nordson Corporation",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:32Z"
+  },
   "norfolk county": {
     "company": "Norfolk County",
     "fail_count": 1,
@@ -26941,8 +27056,8 @@
   },
   "northern trust": {
     "company": "Northern Trust",
-    "fail_count": 43,
-    "last_failed_at": "2026-10-29T03:34:47Z"
+    "fail_count": 45,
+    "last_failed_at": "2026-11-01T03:19:47Z"
   },
   "northport (malaysia) bhd": {
     "company": "Northport (Malaysia) Bhd",
@@ -27208,6 +27323,11 @@
     "company": "NTUC Health Co-operative Limited",
     "fail_count": 1,
     "last_failed_at": "2026-09-09T00:07:24Z"
+  },
+  "nuclear promise x": {
+    "company": "Nuclear Promise X",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "nuclera": {
     "company": "Nuclera",
@@ -27571,8 +27691,8 @@
   },
   "oliver james": {
     "company": "Oliver James",
-    "fail_count": 22,
-    "last_failed_at": "2026-10-16T02:19:20Z"
+    "fail_count": 23,
+    "last_failed_at": "2026-11-01T03:19:47Z"
   },
   "oliver wyman": {
     "company": "Oliver Wyman",
@@ -27616,8 +27736,8 @@
   },
   "omni executive pty ltd": {
     "company": "Omni Executive Pty Ltd",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-31T03:21:15Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:19:33Z"
   },
   "omnicell": {
     "company": "Omnicell",
@@ -27646,8 +27766,8 @@
   },
   "omnissa": {
     "company": "Omnissa",
-    "fail_count": 21,
-    "last_failed_at": "2026-10-23T02:35:40Z"
+    "fail_count": 23,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "omnix international": {
     "company": "Omnix International",
@@ -27778,6 +27898,11 @@
     "company": "Online Payment Platform",
     "fail_count": 8,
     "last_failed_at": "2026-10-28T03:08:18Z"
+  },
+  "onni group of companies": {
+    "company": "Onni Group of Companies",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:13Z"
   },
   "ono pharmaceutical co., ltd.": {
     "company": "ONO PHARMACEUTICAL CO., LTD.",
@@ -27916,8 +28041,8 @@
   },
   "opendoor": {
     "company": "Opendoor",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-11T02:58:14Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:01Z"
   },
   "openfx": {
     "company": "OpenFX",
@@ -28076,8 +28201,8 @@
   },
   "orange engineering gmbh & co. kg": {
     "company": "ORANGE Engineering GmbH & Co. KG",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-02T03:14:23Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:20:05Z"
   },
   "orbcomm": {
     "company": "ORBCOMM",
@@ -28216,8 +28341,8 @@
   },
   "oscar": {
     "company": "Oscar",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-12T03:22:01Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:24Z"
   },
   "oscilar": {
     "company": "Oscilar",
@@ -28386,13 +28511,13 @@
   },
   "oxford nanopore technologies": {
     "company": "Oxford Nanopore Technologies",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-06T03:55:43Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "oxford properties group": {
     "company": "Oxford Properties Group",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-08T00:07:19Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:07Z"
   },
   "p3": {
     "company": "P3",
@@ -28676,8 +28801,8 @@
   },
   "partly": {
     "company": "Partly",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-26T02:23:34Z"
+    "fail_count": 11,
+    "last_failed_at": "2026-11-01T03:20:18Z"
   },
   "partners group": {
     "company": "Partners Group",
@@ -28756,8 +28881,8 @@
   },
   "paypal": {
     "company": "PayPal",
-    "fail_count": 40,
-    "last_failed_at": "2026-10-30T03:35:45Z"
+    "fail_count": 42,
+    "last_failed_at": "2026-11-01T03:18:54Z"
   },
   "paypay corporation": {
     "company": "PayPay Corporation",
@@ -28816,8 +28941,8 @@
   },
   "pearson": {
     "company": "Pearson",
-    "fail_count": 39,
-    "last_failed_at": "2026-10-29T03:33:09Z"
+    "fail_count": 41,
+    "last_failed_at": "2026-11-01T03:18:46Z"
   },
   "pelago by singapore airlines": {
     "company": "Pelago by Singapore Airlines",
@@ -29006,8 +29131,8 @@
   },
   "perplexity": {
     "company": "Perplexity",
-    "fail_count": 12,
-    "last_failed_at": "2026-10-18T02:11:34Z"
+    "fail_count": 14,
+    "last_failed_at": "2026-11-01T03:19:22Z"
   },
   "persistent systems": {
     "company": "Persistent Systems",
@@ -29031,8 +29156,8 @@
   },
   "personio": {
     "company": "Personio",
-    "fail_count": 19,
-    "last_failed_at": "2026-10-31T03:22:13Z"
+    "fail_count": 20,
+    "last_failed_at": "2026-11-01T03:19:48Z"
   },
   "perspectief": {
     "company": "Perspectief",
@@ -29166,8 +29291,8 @@
   },
   "phonepe": {
     "company": "PhonePe",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-22T02:30:40Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:18:32Z"
   },
   "phorest software": {
     "company": "Phorest Software",
@@ -29851,8 +29976,8 @@
   },
   "proact deutschland": {
     "company": "Proact Deutschland",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-31T03:22:16Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:20:01Z"
   },
   "proactive.it appointments ltd.": {
     "company": "Proactive.IT Appointments Ltd.",
@@ -30006,8 +30131,8 @@
   },
   "propel holdings": {
     "company": "Propel Holdings",
-    "fail_count": 1,
-    "last_failed_at": "2026-09-06T00:07:32Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:13Z"
   },
   "propeller": {
     "company": "Propeller",
@@ -30386,8 +30511,8 @@
   },
   "pwc acceleration center india": {
     "company": "PwC Acceleration Center India",
-    "fail_count": 78,
-    "last_failed_at": "2026-10-31T03:19:50Z"
+    "fail_count": 79,
+    "last_failed_at": "2026-11-01T03:18:20Z"
   },
   "pwc australia": {
     "company": "PwC Australia",
@@ -30421,8 +30546,8 @@
   },
   "pwc new zealand": {
     "company": "PwC New Zealand",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-12T03:23:10Z"
+    "fail_count": 13,
+    "last_failed_at": "2026-11-01T03:20:18Z"
   },
   "pwc singapore": {
     "company": "PwC Singapore",
@@ -30551,8 +30676,8 @@
   },
   "qirion": {
     "company": "Qirion",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-11T02:58:59Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:38Z"
   },
   "qix consulting": {
     "company": "QIX Consulting",
@@ -30686,8 +30811,8 @@
   },
   "qualys": {
     "company": "Qualys",
-    "fail_count": 14,
-    "last_failed_at": "2026-10-14T02:46:14Z"
+    "fail_count": 15,
+    "last_failed_at": "2026-11-01T03:19:19Z"
   },
   "quant capital": {
     "company": "Quant Capital",
@@ -30706,8 +30831,8 @@
   },
   "quantexa": {
     "company": "Quantexa",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-15T02:26:24Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:25Z"
   },
   "quantium": {
     "company": "Quantium",
@@ -30826,8 +30951,8 @@
   },
   "quest global": {
     "company": "Quest Global",
-    "fail_count": 20,
-    "last_failed_at": "2026-10-30T03:35:02Z"
+    "fail_count": 22,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "quick suite trading / computer voice systems": {
     "company": "Quick Suite Trading / Computer Voice Systems",
@@ -31036,8 +31161,8 @@
   },
   "raise": {
     "company": "Raise",
-    "fail_count": 19,
-    "last_failed_at": "2026-10-28T03:07:23Z"
+    "fail_count": 21,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "raisin": {
     "company": "Raisin",
@@ -31656,8 +31781,8 @@
   },
   "reltio": {
     "company": "Reltio",
-    "fail_count": 13,
-    "last_failed_at": "2026-10-31T03:19:19Z"
+    "fail_count": 14,
+    "last_failed_at": "2026-11-01T03:18:17Z"
   },
   "relx": {
     "company": "RELX",
@@ -31724,6 +31849,11 @@
     "fail_count": 10,
     "last_failed_at": "2026-10-28T03:06:30Z"
   },
+  "render": {
+    "company": "Render",
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:10Z"
+  },
   "renrui hr": {
     "company": "Renrui HR",
     "fail_count": 1,
@@ -31741,8 +31871,8 @@
   },
   "rentschler biopharma": {
     "company": "Rentschler Biopharma",
-    "fail_count": 1,
-    "last_failed_at": "2026-08-30T00:05:55Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:59Z"
   },
   "reorbit": {
     "company": "ReOrbit",
@@ -32261,8 +32391,8 @@
   },
   "robinhood": {
     "company": "Robinhood",
-    "fail_count": 8,
-    "last_failed_at": "2026-10-15T02:26:07Z"
+    "fail_count": 9,
+    "last_failed_at": "2026-11-01T03:19:27Z"
   },
   "robinson": {
     "company": "ROBINSON",
@@ -32293,6 +32423,11 @@
     "company": "Robots & Pencils",
     "fail_count": 1,
     "last_failed_at": "2026-10-22T02:31:58Z"
+  },
+  "roboyo": {
+    "company": "Roboyo",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:22Z"
   },
   "robson bale": {
     "company": "Robson Bale",
@@ -32346,8 +32481,8 @@
   },
   "rockwool group": {
     "company": "ROCKWOOL Group",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-29T03:33:38Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:18:57Z"
   },
   "rodin business solutions": {
     "company": "Rodin Business Solutions",
@@ -32904,6 +33039,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-10-01T03:09:40Z"
   },
+  "saic": {
+    "company": "SAIC",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:01Z"
+  },
   "saillent": {
     "company": "SAILLENT",
     "fail_count": 1,
@@ -32911,8 +33051,8 @@
   },
   "sailpoint": {
     "company": "SailPoint",
-    "fail_count": 21,
-    "last_failed_at": "2026-10-23T02:38:08Z"
+    "fail_count": 22,
+    "last_failed_at": "2026-11-01T03:19:54Z"
   },
   "sainsbury's": {
     "company": "Sainsbury's",
@@ -33471,8 +33611,8 @@
   },
   "scoutit": {
     "company": "Scoutit",
-    "fail_count": 13,
-    "last_failed_at": "2026-10-30T03:35:10Z"
+    "fail_count": 15,
+    "last_failed_at": "2026-11-01T03:18:32Z"
   },
   "scoutr ai": {
     "company": "Scoutr AI",
@@ -33791,8 +33931,8 @@
   },
   "seeburger": {
     "company": "SEEBURGER",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-24T02:33:50Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:18:46Z"
   },
   "seeders": {
     "company": "Seeders",
@@ -33976,8 +34116,8 @@
   },
   "sentinelone": {
     "company": "SentinelOne",
-    "fail_count": 27,
-    "last_failed_at": "2026-10-30T03:38:06Z"
+    "fail_count": 28,
+    "last_failed_at": "2026-11-01T03:19:20Z"
   },
   "sentosa development corporation": {
     "company": "Sentosa Development Corporation",
@@ -34511,8 +34651,8 @@
   },
   "simcorp": {
     "company": "SimCorp",
-    "fail_count": 23,
-    "last_failed_at": "2026-10-31T03:20:33Z"
+    "fail_count": 25,
+    "last_failed_at": "2026-11-01T03:18:40Z"
   },
   "simeio": {
     "company": "Simeio",
@@ -34726,8 +34866,8 @@
   },
   "skillsoft": {
     "company": "Skillsoft",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-10T03:24:26Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:18:34Z"
   },
   "skillz": {
     "company": "Skillz",
@@ -35159,10 +35299,20 @@
     "fail_count": 1,
     "last_failed_at": "2026-09-22T02:28:27Z"
   },
+  "softenger sdn bhd": {
+    "company": "Softenger Sdn Bhd",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:59Z"
+  },
   "softest consulting services limited": {
     "company": "Softest Consulting Services Limited",
     "fail_count": 1,
     "last_failed_at": "2026-09-22T02:29:56Z"
+  },
+  "softgate": {
+    "company": "softgate",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:07Z"
   },
   "softnice": {
     "company": "SoftNice",
@@ -35269,10 +35419,15 @@
     "fail_count": 2,
     "last_failed_at": "2026-10-17T02:11:38Z"
   },
+  "soliish, inc.": {
+    "company": "Soliish, Inc.",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:05Z"
+  },
   "solink": {
     "company": "Solink",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-28T03:07:21Z"
+    "fail_count": 3,
+    "last_failed_at": "2026-11-01T03:19:13Z"
   },
   "solirius reply": {
     "company": "Solirius Reply",
@@ -35506,8 +35661,8 @@
   },
   "southern cross health insurance": {
     "company": "Southern Cross Health Insurance",
-    "fail_count": 11,
-    "last_failed_at": "2026-10-14T02:46:49Z"
+    "fail_count": 13,
+    "last_failed_at": "2026-11-01T03:20:18Z"
   },
   "southern ports": {
     "company": "Southern Ports",
@@ -35871,8 +36026,8 @@
   },
   "squarespace": {
     "company": "Squarespace",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-10T03:26:54Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:19:47Z"
   },
   "squiz": {
     "company": "Squiz",
@@ -36309,6 +36464,11 @@
     "fail_count": 2,
     "last_failed_at": "2026-09-13T02:09:12Z"
   },
+  "steris": {
+    "company": "STERIS",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:33Z"
+  },
   "sterksen": {
     "company": "Sterksen",
     "fail_count": 20,
@@ -36326,8 +36486,8 @@
   },
   "sthree": {
     "company": "SThree",
-    "fail_count": 5,
-    "last_failed_at": "2026-10-29T03:35:28Z"
+    "fail_count": 6,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "stichting rinis": {
     "company": "Stichting RINIS",
@@ -36876,8 +37036,8 @@
   },
   "swissbit ag": {
     "company": "Swissbit AG",
-    "fail_count": 4,
-    "last_failed_at": "2026-09-09T00:09:42Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:59Z"
   },
   "switch": {
     "company": "Switch",
@@ -36978,6 +37138,11 @@
     "company": "Synergize Consulting",
     "fail_count": 6,
     "last_failed_at": "2026-10-22T02:32:26Z"
+  },
+  "synergy connections": {
+    "company": "Synergy Connections",
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:20:15Z"
   },
   "synergy marine group": {
     "company": "Synergy Marine Group",
@@ -37296,8 +37461,8 @@
   },
   "talentgigs": {
     "company": "Talentgigs",
-    "fail_count": 120,
-    "last_failed_at": "2026-10-30T03:35:44Z"
+    "fail_count": 121,
+    "last_failed_at": "2026-11-01T03:18:46Z"
   },
   "talenthawk": {
     "company": "TalentHawk",
@@ -37331,8 +37496,8 @@
   },
   "talentrabbit": {
     "company": "TalentRabbit",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-28T03:06:02Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:18:46Z"
   },
   "talents tide": {
     "company": "Talents Tide",
@@ -37396,8 +37561,8 @@
   },
   "tangerine": {
     "company": "Tangerine",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-25T02:21:58Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:10Z"
   },
   "tangoefr": {
     "company": "TangoeFR",
@@ -37441,8 +37606,8 @@
   },
   "targetjobs uk": {
     "company": "targetjobs UK",
-    "fail_count": 14,
-    "last_failed_at": "2026-10-25T02:22:26Z"
+    "fail_count": 16,
+    "last_failed_at": "2026-11-01T03:19:30Z"
   },
   "taronga conservation society australia": {
     "company": "Taronga Conservation Society Australia",
@@ -37736,8 +37901,8 @@
   },
   "techfully": {
     "company": "Techfully",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-31T03:19:57Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:18:49Z"
   },
   "techgiant consulting services inc": {
     "company": "TechGiant Consulting Services Inc",
@@ -38926,8 +39091,8 @@
   },
   "thought machine": {
     "company": "Thought Machine",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-21T02:34:30Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:29Z"
   },
   "thoughtbot": {
     "company": "ThoughtBot",
@@ -39414,6 +39579,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-09-13T02:08:44Z"
   },
+  "tp icap": {
+    "company": "TP ICAP",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:22Z"
+  },
   "tpn2": {
     "company": "TPN2",
     "fail_count": 1,
@@ -39471,8 +39641,8 @@
   },
   "trane technologies": {
     "company": "Trane Technologies",
-    "fail_count": 7,
-    "last_failed_at": "2026-10-22T02:31:16Z"
+    "fail_count": 8,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "tranglo": {
     "company": "Tranglo",
@@ -39508,6 +39678,11 @@
     "company": "TransMidIT",
     "fail_count": 2,
     "last_failed_at": "2026-09-11T00:09:00Z"
+  },
+  "transmit security": {
+    "company": "Transmit Security",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:23Z"
   },
   "transport accident commission (tac)": {
     "company": "Transport Accident Commission (TAC)",
@@ -40021,8 +40196,8 @@
   },
   "turner & townsend": {
     "company": "Turner & Townsend",
-    "fail_count": 3,
-    "last_failed_at": "2026-10-11T02:58:31Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:22Z"
   },
   "turnkey consulting malaysia sdn bhd": {
     "company": "Turnkey Consulting Malaysia Sdn Bhd",
@@ -40091,8 +40266,8 @@
   },
   "two sigma": {
     "company": "Two Sigma",
-    "fail_count": 1,
-    "last_failed_at": "2026-10-15T02:27:06Z"
+    "fail_count": 2,
+    "last_failed_at": "2026-11-01T03:19:51Z"
   },
   "txm solutions": {
     "company": "TXM Solutions",
@@ -40151,8 +40326,8 @@
   },
   "tüv süd": {
     "company": "TÜV SÜD",
-    "fail_count": 9,
-    "last_failed_at": "2026-10-25T02:21:46Z"
+    "fail_count": 10,
+    "last_failed_at": "2026-11-01T03:18:27Z"
   },
   "tüv trust it unternehmensgruppe tüv austria": {
     "company": "TÜV TRUST IT Unternehmensgruppe TÜV AUSTRIA",
@@ -40474,6 +40649,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-09-25T02:33:22Z"
   },
+  "uniqlo": {
+    "company": "UNIQLO",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:22Z"
+  },
   "unique engineering eine marke der unique personalservice gmbh": {
     "company": "Unique Engineering eine Marke der Unique Personalservice GmbH",
     "fail_count": 3,
@@ -40548,6 +40728,11 @@
     "company": "United World Inc",
     "fail_count": 2,
     "last_failed_at": "2026-10-04T03:28:49Z"
+  },
+  "unitedlex": {
+    "company": "UnitedLex",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:21Z"
   },
   "unity consulting & innovation": {
     "company": "UNITY Consulting & Innovation",
@@ -40796,8 +40981,8 @@
   },
   "uwv": {
     "company": "UWV",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-22T02:32:57Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:19:40Z"
   },
   "v-soft consulting group, inc.": {
     "company": "V-Soft Consulting Group, Inc.",
@@ -41296,8 +41481,8 @@
   },
   "verkada": {
     "company": "Verkada",
-    "fail_count": 12,
-    "last_failed_at": "2026-10-29T03:33:45Z"
+    "fail_count": 13,
+    "last_failed_at": "2026-11-01T03:19:33Z"
   },
   "vermilion energy": {
     "company": "Vermilion Energy",
@@ -41561,8 +41746,8 @@
   },
   "vinted": {
     "company": "Vinted",
-    "fail_count": 13,
-    "last_failed_at": "2026-10-22T02:32:55Z"
+    "fail_count": 17,
+    "last_failed_at": "2026-11-01T03:19:42Z"
   },
   "vintrica": {
     "company": "vintrica",
@@ -41619,6 +41804,11 @@
     "fail_count": 1,
     "last_failed_at": "2026-10-22T02:33:01Z"
   },
+  "virtuos": {
+    "company": "Virtuos",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:18:57Z"
+  },
   "virtuos kuala lumpur": {
     "company": "Virtuos Kuala Lumpur",
     "fail_count": 3,
@@ -41638,6 +41828,11 @@
     "company": "Visara Partners",
     "fail_count": 1,
     "last_failed_at": "2026-10-28T03:05:50Z"
+  },
+  "viscotec": {
+    "company": "ViscoTec",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:08Z"
   },
   "viseo": {
     "company": "VISEO",
@@ -41849,6 +42044,11 @@
     "fail_count": 2,
     "last_failed_at": "2026-10-27T02:57:08Z"
   },
+  "vogel beratung": {
+    "company": "Vogel Beratung",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:20:00Z"
+  },
   "voiceline": {
     "company": "VoiceLine",
     "fail_count": 3,
@@ -41976,8 +42176,8 @@
   },
   "vtrac consulting corporation (wbe)": {
     "company": "VTRAC Consulting Corporation (WBE)",
-    "fail_count": 6,
-    "last_failed_at": "2026-10-19T02:27:13Z"
+    "fail_count": 7,
+    "last_failed_at": "2026-11-01T03:19:11Z"
   },
   "vultr": {
     "company": "Vultr",
@@ -42286,8 +42486,8 @@
   },
   "wepoint": {
     "company": "Wepoint",
-    "fail_count": 23,
-    "last_failed_at": "2026-10-31T03:20:36Z"
+    "fail_count": 24,
+    "last_failed_at": "2026-11-01T03:19:02Z"
   },
   "werize": {
     "company": "WeRize",
@@ -42373,6 +42573,11 @@
     "company": "Westbourne",
     "fail_count": 1,
     "last_failed_at": "2026-09-04T00:08:45Z"
+  },
+  "westcoast limited": {
+    "company": "Westcoast Limited",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:18Z"
   },
   "western health": {
     "company": "Western Health",
@@ -42551,8 +42756,8 @@
   },
   "wilken software group": {
     "company": "Wilken Software Group",
-    "fail_count": 2,
-    "last_failed_at": "2026-10-10T03:27:26Z"
+    "fail_count": 4,
+    "last_failed_at": "2026-11-01T03:20:07Z"
   },
   "willi elbe steering system ( nanjing) co., ltd": {
     "company": "Willi Elbe Steering system ( Nanjing) Co., LTD",
@@ -43196,8 +43401,8 @@
   },
   "xpt software australia": {
     "company": "XPT Software Australia",
-    "fail_count": 25,
-    "last_failed_at": "2026-10-25T02:22:33Z"
+    "fail_count": 26,
+    "last_failed_at": "2026-11-01T03:19:32Z"
   },
   "xr extreme reach": {
     "company": "XR Extreme Reach",
@@ -43821,8 +44026,8 @@
   },
   "zuru": {
     "company": "ZURU",
-    "fail_count": 4,
-    "last_failed_at": "2026-10-29T03:35:40Z"
+    "fail_count": 5,
+    "last_failed_at": "2026-11-01T03:20:17Z"
   },
   "zus coffee": {
     "company": "ZUS COFFEE",
@@ -43888,6 +44093,11 @@
     "company": "サイバーリーズン・ジャパン(A LevelBlue Company)",
     "fail_count": 1,
     "last_failed_at": "2026-09-04T00:09:00Z"
+  },
+  "フジアルテ株式会社": {
+    "company": "フジアルテ株式会社",
+    "fail_count": 1,
+    "last_failed_at": "2026-11-01T03:19:51Z"
   },
   "ブルーモ証券 bloomo securities": {
     "company": "ブルーモ証券 Bloomo Securities",
