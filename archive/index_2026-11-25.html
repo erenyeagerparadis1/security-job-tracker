@@ -1,0 +1,2364 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Daily Security Engineering Dashboard</title>
+        <style>
+            :root {
+                --bg: #0f172a;
+                --card-bg: #1e293b;
+                --text: #f8fafc;
+                --accent: #38bdf8;
+                --border: #334155;
+            }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; margin: 0; }
+            h1 { font-size: 1.75rem; margin-bottom: 0.25rem; color: var(--accent); }
+            .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem; }
+            
+            .archive-row { color: #94a3b8; font-size: 0.8rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.45rem 0.75rem; align-items: center; }
+            .archive-row a { color: var(--accent); }
+
+            .date-filter { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
+            .date-filter-label { color: #94a3b8; font-size: 0.8rem; margin-bottom: 0.55rem; }
+            .date-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.7rem; }
+            .date-chip { min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: #0f172a; color: #e2e8f0; font-size: 0.85rem; cursor: pointer; touch-action: manipulation; }
+            .date-chip[aria-pressed="true"] { background: #0369a1; border-color: var(--accent); color: #fff; }
+            .date-range { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
+            .date-range label { color: #94a3b8; font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem; }
+            .date-range input[type="date"], .date-apply { font-size: 16px; min-height: 44px; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: var(--text); padding: 0.35rem 0.55rem; }
+            .date-apply { background: #0369a1; color: #fff; cursor: pointer; font-weight: 600; touch-action: manipulation; }
+            .date-status { color: #94a3b8; font-size: 0.8rem; margin-top: 0.55rem; }
+            .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+            .date-badge { display: inline-block; margin-left: 0.4rem; background: #334155; color: #cbd5e1; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: 600; }
+            .empty-state { color: #94a3b8; padding: 1rem 0; }
+
+            .tab-header { display: flex; gap: 1rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+            .tab-btn { background: none; border: none; color: #94a3b8; font-size: 1rem; font-weight: 600; padding: 0.75rem 1.25rem; cursor: pointer; border-bottom: 3px solid transparent; }
+            .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+            .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+            .metric-card { background: var(--card-bg); border: 1px solid var(--border); padding: 0.75rem 1rem; border-radius: 6px; }
+            .metric-card .loc-name { font-size: 0.8rem; color: #94a3b8; }
+            .metric-card .loc-count { font-size: 1.25rem; font-weight: bold; color: var(--accent); }
+
+            table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: visible; margin-top: 0.5rem; }
+            th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+            th { background-color: #0284c7; color: white; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; position: relative; }
+
+            .col-filter-box { margin-top: 0.45rem; font-weight: 400; text-transform: none; letter-spacing: 0; }
+            .col-search { width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 16px; box-sizing: border-box; }
+            .ms-wrap { position: relative; margin-top: 0.3rem; }
+            .ms-toggle { width: 100%; padding: 0.35rem 0.45rem; border-radius: 4px; border: 1px solid var(--border); background: #0f172a; color: #cbd5e1; font-size: 16px; text-align: left; cursor: pointer; min-height: 44px; }
+            .ms-panel { display: none; position: absolute; z-index: 30; left: 0; min-width: 100%; max-height: 220px; overflow: auto; background: #0f172a; border: 1px solid var(--border); border-radius: 4px; padding: 0.4rem; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+            .ms-wrap.open .ms-panel { display: block; }
+            .ms-option { display: flex; gap: 0.4rem; align-items: flex-start; padding: 0.2rem 0; color: #e2e8f0; font-size: 0.75rem; cursor: pointer; }
+            .ms-option input { margin-top: 0.15rem; }
+            .ms-mode { display: flex; margin-top: 0.3rem; }
+            .ms-mode-btn { flex: 1; min-height: 32px; padding: 0.25rem 0.4rem; border: 1px solid var(--border); background: #0f172a; color: #94a3b8; font-size: 0.7rem; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+            .ms-mode-btn:first-child { border-radius: 4px 0 0 4px; }
+            .ms-mode-btn:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
+            .ms-mode-btn.active[data-mode="include"] { background: #0369a1; color: #fff; border-color: var(--accent); }
+            .ms-mode-btn.active[data-mode="exclude"] { background: #9f1239; color: #fff; border-color: #fb7185; }
+            .ms-wrap.exclude .ms-toggle { border-color: #fb7185; color: #fda4af; }
+            .badge { background: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+            .badge-danger { background: #9f1239; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+            .score { color: #facc15; font-weight: bold; }
+            a { color: var(--accent); text-decoration: none; font-weight: 500; }
+            .completed-filter { display: flex; flex-wrap: wrap; gap: 0.45rem 0.75rem; align-items: center; margin: 0 0 0.75rem; }
+            .completed-filter-label { color: #94a3b8; font-size: 0.8rem; }
+            .completed-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+            .completed-chip { min-height: 36px; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: #0f172a; color: #e2e8f0; font-size: 0.85rem; cursor: pointer; touch-action: manipulation; }
+            .completed-chip[aria-pressed="true"] { background: #0369a1; border-color: var(--accent); color: #fff; }
+            .completed-hint { color: #64748b; font-size: 0.75rem; }
+            #jobsTable tbody tr { cursor: pointer; }
+            #jobsTable tbody tr:hover { background: #334155; }
+            #jobsTable tbody tr.completed { opacity: 0.55; }
+            #jobsTable tbody tr.completed strong { text-decoration: line-through; }
+            .done-badge { display: inline-block; margin-left: 0.4rem; background: #166534; color: #bbf7d0; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: 600; }
+
+            @media (max-width: 640px) {
+                body { padding: 1rem; }
+                h1 { font-size: 1.35rem; }
+                .tab-header { flex-wrap: wrap; gap: 0; }
+                .tab-btn { flex: 1 1 100%; text-align: left; }
+                .date-range { flex-direction: column; align-items: stretch; }
+                .date-range label { width: 100%; justify-content: space-between; }
+                .ms-panel { left: 0; right: 0; min-width: 0; }
+                th, td { padding: 0.55rem 0.65rem; }
+                table { min-width: 640px; }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Security Engineering Job Dashboard</h1>
+        <div class="subtitle">Generated on 2026-11-25 06:07:55 UTC</div>
+        <div class="archive-row">
+            <a href="../index.html">Latest</a>
+            
+            <a href="index_2026-11-25.html">2026-11-25</a>
+            
+            <a href="index_2026-11-24.html">2026-11-24</a>
+            
+            <a href="index_2026-11-23.html">2026-11-23</a>
+            
+            <a href="index_2026-11-22.html">2026-11-22</a>
+            
+            <a href="index_2026-11-21.html">2026-11-21</a>
+            
+            <a href="index_2026-11-20.html">2026-11-20</a>
+            
+            <a href="index_2026-11-19.html">2026-11-19</a>
+            
+        </div>
+        
+
+        <div class="tab-header">
+            <button class="tab-btn active" id="activeTabBtn" onclick="switchTab('activeTab', this)">Active Security Roles (119)</button>
+            <button class="tab-btn" id="discardedTabBtn" onclick="switchTab('discardedTab', this)">Discarded Roles (86)</button>
+        </div>
+
+        <!-- TAB 1: ACTIVE JOBS -->
+        <div id="activeTab">
+            <h2>Location Breakdown</h2>
+            <div class="metrics-grid" id="metricsGrid">
+                
+                <div class="metric-card">
+                    <div class="loc-name">Bengaluru, India</div>
+                    <div class="loc-count">17</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Hyderabad, India</div>
+                    <div class="loc-count">7</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Chennai, India</div>
+                    <div class="loc-count">6</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Coimbatore, India</div>
+                    <div class="loc-count">1</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Singapore</div>
+                    <div class="loc-count">10</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Malaysia</div>
+                    <div class="loc-count">8</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Canada</div>
+                    <div class="loc-count">0</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">United Kingdom</div>
+                    <div class="loc-count">10</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Australia</div>
+                    <div class="loc-count">10</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Netherlands</div>
+                    <div class="loc-count">8</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Ireland</div>
+                    <div class="loc-count">12</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Japan</div>
+                    <div class="loc-count">4</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">Germany</div>
+                    <div class="loc-count">19</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">United Arab Emirates</div>
+                    <div class="loc-count">10</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="loc-name">New Zealand</div>
+                    <div class="loc-count">1</div>
+                </div>
+                
+            </div>
+
+            <div class="completed-filter" id="completedFilter">
+                <div class="completed-filter-label">Show</div>
+                <div class="completed-chips">
+                    <button type="button" class="completed-chip" data-mode="incomplete" aria-pressed="true">Incomplete</button>
+                    <button type="button" class="completed-chip" data-mode="completed" aria-pressed="false">Completed</button>
+                    <button type="button" class="completed-chip" data-mode="both" aria-pressed="false">Both</button>
+                </div>
+                <div class="completed-hint">Double-click a row to mark it complete</div>
+            </div>
+
+            <div class="table-scroll">
+            <table id="jobsTable">
+                <thead>
+                    <tr>
+                        <th>Job Title
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('jobsTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Company
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('jobsTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Blind Score
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('jobsTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Location
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('jobsTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-security-engineer-at-josys-4494099997" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Josys</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-security-engineer-at-josys-4494099997" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/security-engineer-iii-infra-security-at-meesho-4486815615" title="Double-click to mark complete">
+                        <td><strong>Security Engineer III - Infra Security</strong></td>
+                        <td>Meesho</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/security-engineer-iii-infra-security-at-meesho-4486815615" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-security-operations-engineer-at-everpure-4477973475" title="Double-click to mark complete">
+                        <td><strong>Senior Security Operations Engineer</strong></td>
+                        <td>Everpure</td>
+                        <td><span class="score">★ 3.8</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-security-operations-engineer-at-everpure-4477973475" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-security-engineer-at-ig-group-4493002264" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>IG Group</td>
+                        <td><span class="score">★ 4.0</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-security-engineer-at-ig-group-4493002264" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-security-engineer-at-e6data-4492694577" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>e6data</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bangalore North Rural, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-security-engineer-at-e6data-4492694577" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/ai-platform-security-engineer-at-talastra-hr-consultants-private-limited-4494116841" title="Double-click to mark complete">
+                        <td><strong>AI Platform Security Engineer</strong></td>
+                        <td>TalAstra HR Consultants Private Limited</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bangalore Urban, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/ai-platform-security-engineer-at-talastra-hr-consultants-private-limited-4494116841" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-staff-security-engineer-at-bazaarvoice-4494111430" title="Double-click to mark complete">
+                        <td><strong>Senior Staff - Security Engineer</strong></td>
+                        <td>Bazaarvoice</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-staff-security-engineer-at-bazaarvoice-4494111430" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-information-security-engineer-at-blackline-4493015033" title="Double-click to mark complete">
+                        <td><strong>Senior Information Security Engineer</strong></td>
+                        <td>BlackLine</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-information-security-engineer-at-blackline-4493015033" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-security-engineer-at-e6data-4492688247" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>e6data</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-security-engineer-at-e6data-4492688247" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/cyber-security-engineer-asssistant-vice-president-at-state-street-4488806649" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer, Asssistant Vice President</strong></td>
+                        <td>State Street</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/cyber-security-engineer-asssistant-vice-president-at-state-street-4488806649" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-devsecops-engineer-at-haleon-4494357985" title="Double-click to mark complete">
+                        <td><strong>Senior DevSecOps Engineer</strong></td>
+                        <td>Haleon</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-devsecops-engineer-at-haleon-4494357985" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/vulnerability-management-qualys-at-ust-4484338776" title="Double-click to mark complete">
+                        <td><strong>Vulnerability Management (Qualys)</strong></td>
+                        <td>UST</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/vulnerability-management-qualys-at-ust-4484338776" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/siem-google-secops-senior-associate-at-pwc-acceleration-center-india-4470412151" title="Double-click to mark complete">
+                        <td><strong>SIEM - Google Secops - Senior Associate</strong></td>
+                        <td>PwC Acceleration Center India</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Bengaluru East, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/siem-google-secops-senior-associate-at-pwc-acceleration-center-india-4470412151" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/security-architect-ai-for-threat-at-ibm-4485007031" title="Double-click to mark complete">
+                        <td><strong>Security Architect-AI for Threat</strong></td>
+                        <td>IBM</td>
+                        <td><span class="score">★ 3.3</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/security-architect-ai-for-threat-at-ibm-4485007031" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/security-architect-at-josys-4494314500" title="Double-click to mark complete">
+                        <td><strong>Security Architect</strong></td>
+                        <td>Josys</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/security-architect-at-josys-4494314500" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/global-safety-security-systems-analyst-%E2%80%93-physical-security-systems-solutions-engineering-physical-security-technology-at-visa-4494133225" title="Double-click to mark complete">
+                        <td><strong>Global Safety & Security Systems Analyst – Physical Security Systems Solutions Engineering Physical Security Technology</strong></td>
+                        <td>Visa</td>
+                        <td><span class="score">★ 3.5</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/global-safety-security-systems-analyst-%E2%80%93-physical-security-systems-solutions-engineering-physical-security-technology-at-visa-4494133225" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/security-architect-l1-at-wipro-4493993751" title="Double-click to mark complete">
+                        <td><strong>SECURITY ARCHITECT L1</strong></td>
+                        <td>Wipro</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/security-architect-l1-at-wipro-4493993751" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/sr-security-engineer-%E2%80%93-non-human-identity-at-zelis-4493015258" title="Double-click to mark complete">
+                        <td><strong>Sr Security Engineer – Non-Human Identity</strong></td>
+                        <td>Zelis</td>
+                        <td><span class="score">★ 4.0</span></td>
+                        <td><span class="badge">Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sr-security-engineer-%E2%80%93-non-human-identity-at-zelis-4493015258" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/staff-security-engineer-perimeter-security-at-fanatics-4494754067" title="Double-click to mark complete">
+                        <td><strong>Staff Security Engineer (Perimeter Security)</strong></td>
+                        <td>Fanatics</td>
+                        <td><span class="score">★ 3.3</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/staff-security-engineer-perimeter-security-at-fanatics-4494754067" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-network-security-engineer-%E2%80%93-fortinet-zscaler-l3-at-ust-4493095154" title="Double-click to mark complete">
+                        <td><strong>Senior Network Security Engineer – Fortinet & Zscaler (L3)</strong></td>
+                        <td>UST</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-network-security-engineer-%E2%80%93-fortinet-zscaler-l3-at-ust-4493095154" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/principal-cybersecurity-engineer-at-providence-india-4494197831" title="Double-click to mark complete">
+                        <td><strong>Principal Cybersecurity Engineer</strong></td>
+                        <td>Providence India</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/principal-cybersecurity-engineer-at-providence-india-4494197831" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/engineer-cybersecurity-at-nationwide-4494381083" title="Double-click to mark complete">
+                        <td><strong>Engineer, Cybersecurity</strong></td>
+                        <td>Nationwide</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/engineer-cybersecurity-at-nationwide-4494381083" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/security-customer-engineer-at-beyondsoft-4494134270" title="Double-click to mark complete">
+                        <td><strong>Security Customer Engineer</strong></td>
+                        <td>Beyondsoft</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/security-customer-engineer-at-beyondsoft-4494134270" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-firmware-engineer-security-at-axiado-corporation-4494135104" title="Double-click to mark complete">
+                        <td><strong>Senior Firmware Engineer - Security</strong></td>
+                        <td>Axiado Corporation</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-firmware-engineer-security-at-axiado-corporation-4494135104" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/senior-cybersecurity-lead-%E2%80%93-devsecops-and-governance-at-dnv-4476050062" title="Double-click to mark complete">
+                        <td><strong>Senior Cybersecurity Lead – DevSecOps and Governance</strong></td>
+                        <td>DNV</td>
+                        <td><span class="score">★ 3.8</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-cybersecurity-lead-%E2%80%93-devsecops-and-governance-at-dnv-4476050062" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/cyber-security-engineer-at-speedmart-4494300899" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer</strong></td>
+                        <td>SpeedMart</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/cyber-security-engineer-at-speedmart-4494300899" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/servicenow-secops-vr-senior-consultant-at-deloitte-4433252374" title="Double-click to mark complete">
+                        <td><strong>ServiceNow SecOps VR - Senior Consultant</strong></td>
+                        <td>Deloitte</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/servicenow-secops-vr-senior-consultant-at-deloitte-4433252374" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/ai-security-architect-at-flex-4494724250" title="Double-click to mark complete">
+                        <td><strong>AI Security Architect</strong></td>
+                        <td>Flex</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/ai-security-architect-at-flex-4494724250" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/saas-cyber-security-specialist-at-ford-motor-company-4494124394" title="Double-click to mark complete">
+                        <td><strong>SaaS Cyber Security Specialist</strong></td>
+                        <td>Ford Motor Company</td>
+                        <td><span class="score">★ 3.5</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/saas-cyber-security-specialist-at-ford-motor-company-4494124394" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/usi-cyber-dt-p-data-protection-ai-security-consultant-l35-at-deloitte-4477928417" title="Double-click to mark complete">
+                        <td><strong>USI- Cyber- DT&P -Data Protection - AI Security Consultant - L35</strong></td>
+                        <td>Deloitte</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/usi-cyber-dt-p-data-protection-ai-security-consultant-l35-at-deloitte-4477928417" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://in.linkedin.com/jobs/view/cloud-security-engineer-at-iitjobs-inc-4494771771" title="Double-click to mark complete">
+                        <td><strong>Cloud Security Engineer</strong></td>
+                        <td>iitjobs, Inc.</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/cloud-security-engineer-at-iitjobs-inc-4494771771" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/vp1-application-vulnerability-management-lead-gadt-at-uob-4494706990" title="Double-click to mark complete">
+                        <td><strong>VP1 Application Vulnerability Management Lead, GADT</strong></td>
+                        <td>UOB</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/vp1-application-vulnerability-management-lead-gadt-at-uob-4494706990" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/principal-cyber-security-architect-application-security-at-dyson-4469913340" title="Double-click to mark complete">
+                        <td><strong>Principal Cyber Security Architect (Application Security)</strong></td>
+                        <td>Dyson</td>
+                        <td><span class="score">★ 2.4</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/principal-cyber-security-architect-application-security-at-dyson-4469913340" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/vp1-application-vulnerability-management-lead-cco-gbt-at-uob-4494703901" title="Double-click to mark complete">
+                        <td><strong>VP1 Application Vulnerability Management Lead - CCO, GBT</strong></td>
+                        <td>UOB</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/vp1-application-vulnerability-management-lead-cco-gbt-at-uob-4494703901" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/senior-it-security-engineer-at-user-experience-researchers-pte-ltd-singapore-4494771374" title="Double-click to mark complete">
+                        <td><strong>Senior IT Security Engineer</strong></td>
+                        <td>User Experience Researchers Pte Ltd (Singapore)</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/senior-it-security-engineer-at-user-experience-researchers-pte-ltd-singapore-4494771374" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/risk-services-cybersecurity-senior-associate-assistant-manager-offensive-security-security-testing-delivery-at-pwc-singapore-4494325968" title="Double-click to mark complete">
+                        <td><strong>Risk Services, Cybersecurity Senior Associate / Assistant Manager - Offensive Security (Security Testing Delivery)</strong></td>
+                        <td>PwC Singapore</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/risk-services-cybersecurity-senior-associate-assistant-manager-offensive-security-security-testing-delivery-at-pwc-singapore-4494325968" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/lead-ci-cd-devsecops-engineer-20261042355-at-beyondsoft-singapore-4494128437" title="Double-click to mark complete">
+                        <td><strong>Lead CI/CD DevSecOps Engineer [20261042355]</strong></td>
+                        <td>Beyondsoft Singapore</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/lead-ci-cd-devsecops-engineer-20261042355-at-beyondsoft-singapore-4494128437" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/cyber-security-specialist-at-tata-consultancy-services-4487900191" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Specialist</strong></td>
+                        <td>Tata Consultancy Services</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/cyber-security-specialist-at-tata-consultancy-services-4487900191" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/ai-software-engineer-ai-forecasting-ai-security-0%E2%86%921-product-development-at-dada-consultants-4494763958" title="Double-click to mark complete">
+                        <td><strong>AI Software Engineer (AI Forecasting / AI Security | 0→1 Product Development)</strong></td>
+                        <td>Dada Consultants</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/ai-software-engineer-ai-forecasting-ai-security-0%E2%86%921-product-development-at-dada-consultants-4494763958" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/cybersecurity-testing-engineer-at-aleph-formerly-red-alpha-cyber-4492690132" title="Double-click to mark complete">
+                        <td><strong>Cybersecurity Testing Engineer</strong></td>
+                        <td>Aleph (Formerly Red Alpha Cyber)</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Singapore, Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/cybersecurity-testing-engineer-at-aleph-formerly-red-alpha-cyber-4492690132" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://sg.linkedin.com/jobs/view/ai-security-engineer-apac-remote-at-binance-4494302959" title="Double-click to mark complete">
+                        <td><strong>AI Security Engineer (APAC Remote)</strong></td>
+                        <td>Binance</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Singapore</span></td>
+                        <td><a href="https://sg.linkedin.com/jobs/view/ai-security-engineer-apac-remote-at-binance-4494302959" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/senior-specialist-application-security-engineer-at-dksh-4484652647" title="Double-click to mark complete">
+                        <td><strong>Senior Specialist Application Security Engineer</strong></td>
+                        <td>DKSH</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/senior-specialist-application-security-engineer-at-dksh-4484652647" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/drsc-global-technology-analyst-security-tester-at-deloitte-4468473501" title="Double-click to mark complete">
+                        <td><strong>DRSC Global Technology, Analyst - Security Tester</strong></td>
+                        <td>Deloitte</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/drsc-global-technology-analyst-security-tester-at-deloitte-4468473501" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/principal-security-operation-engineer-at-bybit-4494706253" title="Double-click to mark complete">
+                        <td><strong>Principal Security Operation Engineer</strong></td>
+                        <td>Bybit</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Greater Kuala Lumpur</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/principal-security-operation-engineer-at-bybit-4494706253" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/senior-manager-digital-security-at-aia-digital%2B-4494765606" title="Double-click to mark complete">
+                        <td><strong>Senior Manager, Digital Security</strong></td>
+                        <td>AIA Digital+</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">WP. Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/senior-manager-digital-security-at-aia-digital%2B-4494765606" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/google-security-operations-engineer-at-sunbytes-4494766799" title="Double-click to mark complete">
+                        <td><strong>Google Security Operations Engineer</strong></td>
+                        <td>Sunbytes</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/google-security-operations-engineer-at-sunbytes-4494766799" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/cyber-security-engineer-at-bit-official-4494769379" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer</strong></td>
+                        <td>BIT Official</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Federal Territory of Kuala Lumpur, Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/cyber-security-engineer-at-bit-official-4494769379" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/senior-security-engineer-data-security-engineering-at-uob-4320711008" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer - Data Security Engineering</strong></td>
+                        <td>UOB</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Greater Kuala Lumpur</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/senior-security-engineer-data-security-engineering-at-uob-4320711008" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://my.linkedin.com/jobs/view/senior-insider-threat-engineer-at-grab-4475157799" title="Double-click to mark complete">
+                        <td><strong>Senior Insider Threat Engineer</strong></td>
+                        <td>Grab</td>
+                        <td><span class="score">★ 3.5</span></td>
+                        <td><span class="badge">Petaling Jaya, Selangor, Malaysia</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/senior-insider-threat-engineer-at-grab-4475157799" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-next-4476038069" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Next</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Leicester, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-next-4476038069" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-talos-4494700272" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Talos</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-talos-4494700272" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/platform-security-engineer-at-depop-4494186431" title="Double-click to mark complete">
+                        <td><strong>Platform Security Engineer</strong></td>
+                        <td>Depop</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/platform-security-engineer-at-depop-4494186431" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-security-engineer-ii-at-strava-4493050953" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer II</strong></td>
+                        <td>Strava</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-security-engineer-ii-at-strava-4493050953" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/security-engineer-hedge-fund-1361747-at-referment-4494134395" title="Double-click to mark complete">
+                        <td><strong>Security Engineer | Hedge Fund (1361747)</strong></td>
+                        <td>Referment</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/security-engineer-hedge-fund-1361747-at-referment-4494134395" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-xcede-4494704876" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Xcede</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London Area, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-security-engineer-at-xcede-4494704876" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/member-of-technical-staff-security-at-cohere-4467624965" title="Double-click to mark complete">
+                        <td><strong>Member of Technical Staff, Security</strong></td>
+                        <td>Cohere</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">London, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/member-of-technical-staff-security-at-cohere-4467624965" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-cloud-security-engineer-at-harnham-4494174545" title="Double-click to mark complete">
+                        <td><strong>Senior Cloud Security Engineer</strong></td>
+                        <td>Harnham</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">London Area, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-cloud-security-engineer-at-harnham-4494174545" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/vulnerability-management-engineer-at-castle-trust-bank-4494187116" title="Double-click to mark complete">
+                        <td><strong>Vulnerability Management Engineer</strong></td>
+                        <td>Castle Trust Bank</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Basingstoke, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/vulnerability-management-engineer-at-castle-trust-bank-4494187116" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://uk.linkedin.com/jobs/view/senior-identity-security-engineer-at-fsp-4494149322" title="Double-click to mark complete">
+                        <td><strong>Senior Identity Security Engineer</strong></td>
+                        <td>FSP</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Reading, England, United Kingdom</span></td>
+                        <td><a href="https://uk.linkedin.com/jobs/view/senior-identity-security-engineer-at-fsp-4494149322" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/security-engineer-at-wagetap-4494328203" title="Double-click to mark complete">
+                        <td><strong>Security Engineer</strong></td>
+                        <td>Wagetap</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/security-engineer-at-wagetap-4494328203" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-the-kids-research-institute-australia-4492691884" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer</strong></td>
+                        <td>The Kids Research Institute Australia</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Nedlands, Western Australia, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-the-kids-research-institute-australia-4492691884" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/senior-security-engineer-saviynt-at-decipher-bureau-4494739796" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer - Saviynt</strong></td>
+                        <td>Decipher Bureau</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Melbourne, Victoria, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/senior-security-engineer-saviynt-at-decipher-bureau-4494739796" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/senior-security-engineer-exposure-vulnerability-management-at-westpac-group-4494465867" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer - Exposure & Vulnerability Management</strong></td>
+                        <td>Westpac Group</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/senior-security-engineer-exposure-vulnerability-management-at-westpac-group-4494465867" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-pra-4494772052" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer</strong></td>
+                        <td>PRA</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">North Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-pra-4494772052" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/engineer-application-security-at-origin-energy-4494741411" title="Double-click to mark complete">
+                        <td><strong>Engineer - Application Security</strong></td>
+                        <td>Origin Energy</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Melbourne, Victoria, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/engineer-application-security-at-origin-energy-4494741411" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/cyber-engineering-security-specialist-at-tpg-telecom-4451127139" title="Double-click to mark complete">
+                        <td><strong>Cyber Engineering Security Specialist</strong></td>
+                        <td>TPG Telecom</td>
+                        <td><span class="score">★ 4.3</span></td>
+                        <td><span class="badge">Barangaroo, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/cyber-engineering-security-specialist-at-tpg-telecom-4451127139" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-ocius-4494759094" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Engineer</strong></td>
+                        <td>Ocius</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/cyber-security-engineer-at-ocius-4494759094" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/principal-security-engineer-at-linkly-4481519679" title="Double-click to mark complete">
+                        <td><strong>Principal Security Engineer</strong></td>
+                        <td>Linkly</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/principal-security-engineer-at-linkly-4481519679" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://au.linkedin.com/jobs/view/principal-cybersecurity-engineer-agentic-ai-at-westpac-group-4494475385" title="Double-click to mark complete">
+                        <td><strong>Principal Cybersecurity Engineer - Agentic AI</strong></td>
+                        <td>Westpac Group</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sydney, New South Wales, Australia</span></td>
+                        <td><a href="https://au.linkedin.com/jobs/view/principal-cybersecurity-engineer-agentic-ai-at-westpac-group-4494475385" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/security-engineer-at-salento-4494137943" title="Double-click to mark complete">
+                        <td><strong>Security Engineer</strong></td>
+                        <td>Salento</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Amsterdam, North Holland, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/security-engineer-at-salento-4494137943" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/senior-security-engineer-corporate-security-at-flexport-4477902823" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer, Corporate Security</strong></td>
+                        <td>Flexport</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Amsterdam, North Holland, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/senior-security-engineer-corporate-security-at-flexport-4477902823" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/system-security-engineer-at-zorg-en-zekerheid-4494325023" title="Double-click to mark complete">
+                        <td><strong>System & Security Engineer</strong></td>
+                        <td>Zorg en Zekerheid</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Nederland, Overijssel, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/system-security-engineer-at-zorg-en-zekerheid-4494325023" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/devsecops-engineer-platform-engineer-at-ampstek-4494328420" title="Double-click to mark complete">
+                        <td><strong>DevSecops Engineer / Platform Engineer</strong></td>
+                        <td>Ampstek</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Amsterdam, North Holland, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/devsecops-engineer-platform-engineer-at-ampstek-4494328420" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/microsoft-365-security-architect-at-ubique-systems-4493017621" title="Double-click to mark complete">
+                        <td><strong>Microsoft 365 Security Architect</strong></td>
+                        <td>Ubique Systems</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Amsterdam Area</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/microsoft-365-security-architect-at-ubique-systems-4493017621" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/security-architect-at-ubique-systems-4492678858" title="Double-click to mark complete">
+                        <td><strong>Security Architect</strong></td>
+                        <td>Ubique Systems</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Amsterdam Area</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/security-architect-at-ubique-systems-4492678858" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/generalist-network-security-ot-infrastructure-at-us3-consulting-4494125384" title="Double-click to mark complete">
+                        <td><strong>Generalist (Network Security & OT Infrastructure)</strong></td>
+                        <td>Us3 Consulting</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Amsterdam, North Holland, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/generalist-network-security-ot-infrastructure-at-us3-consulting-4494125384" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nl.linkedin.com/jobs/view/sr-cyber-security-consultant-at-hi-tech-it-4494319469" title="Double-click to mark complete">
+                        <td><strong>Sr. Cyber security consultant</strong></td>
+                        <td>Hi Tech-IT</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Utrecht, Netherlands</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/sr-cyber-security-consultant-at-hi-tech-it-4494319469" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/blockchain-security-engineer-at-bny-4494167048" title="Double-click to mark complete">
+                        <td><strong>Blockchain Security Engineer</strong></td>
+                        <td>BNY</td>
+                        <td><span class="score">★ 3.3</span></td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/blockchain-security-engineer-at-bny-4494167048" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/senior-security-engineer-automation-%E2%80%93-financial-services-%E2%80%93-dublin-2-wfh-onsite-hybrid-at-it-search-4494167326" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer (Automation) – Financial Services – Dublin 2 (WFH/onsite hybrid)</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-security-engineer-automation-%E2%80%93-financial-services-%E2%80%93-dublin-2-wfh-onsite-hybrid-at-it-search-4494167326" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/network-security-engineer-financial-services-dublin-2-at-it-search-4494157726" title="Double-click to mark complete">
+                        <td><strong>Network Security Engineer - Financial Services, Dublin 2</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/network-security-engineer-financial-services-dublin-2-at-it-search-4494157726" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/senior-security-engineer-at-sigmar-recruitment-4494181262" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Sigmar Recruitment</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-security-engineer-at-sigmar-recruitment-4494181262" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/sr-security-engineer-european-sovereign-cloud-esc-threat-intelligence-at-amazon-4460544230" title="Double-click to mark complete">
+                        <td><strong>Sr. Security Engineer , European Sovereign Cloud (ESC) Threat Intelligence</strong></td>
+                        <td>Amazon</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/sr-security-engineer-european-sovereign-cloud-esc-threat-intelligence-at-amazon-4460544230" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/principal-devsecops-engineer-at-nicoll-curtin-4494133909" title="Double-click to mark complete">
+                        <td><strong>Principal DevSecOps Engineer</strong></td>
+                        <td>Nicoll Curtin</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">County Galway, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/principal-devsecops-engineer-at-nicoll-curtin-4494133909" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/senior-security-research-engineer-at-elastic-4486453480" title="Double-click to mark complete">
+                        <td><strong>Senior Security Research Engineer</strong></td>
+                        <td>Elastic</td>
+                        <td><span class="score">★ 4.1</span></td>
+                        <td><span class="badge">Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-security-research-engineer-at-elastic-4486453480" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/vulnerability-management-platform-engineer-at-northern-trust-4493033178" title="Double-click to mark complete">
+                        <td><strong>Vulnerability Management Platform Engineer</strong></td>
+                        <td>Northern Trust</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Limerick, County Limerick, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/vulnerability-management-platform-engineer-at-northern-trust-4493033178" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/devsecops-engineer-at-archer-recruitment-4494407257" title="Double-click to mark complete">
+                        <td><strong>DevSecOps Engineer</strong></td>
+                        <td>Archer Recruitment</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/devsecops-engineer-at-archer-recruitment-4494407257" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/cybersecurity-incident-manager-at-nicoll-curtin-4494142742" title="Double-click to mark complete">
+                        <td><strong>Cybersecurity Incident Manager</strong></td>
+                        <td>Nicoll Curtin</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">County Galway, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/cybersecurity-incident-manager-at-nicoll-curtin-4494142742" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/manager-security-operations-incident-response-at-sitecore-4485742867" title="Double-click to mark complete">
+                        <td><strong>Manager, Security Operations & Incident Response</strong></td>
+                        <td>Sitecore</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/manager-security-operations-incident-response-at-sitecore-4485742867" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ie.linkedin.com/jobs/view/level-one-technical-support-engineer-ai-security-at-omnissa-4494393550" title="Double-click to mark complete">
+                        <td><strong>Level One Technical Support Engineer - AI/ Security</strong></td>
+                        <td>Omnissa</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Cork Metropolitan Area</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/level-one-technical-support-engineer-ai-security-at-omnissa-4494393550" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://jp.linkedin.com/jobs/view/cybersecurity-remediation-engineer-japan-at-ibm-4458838967" title="Double-click to mark complete">
+                        <td><strong>Cybersecurity Remediation Engineer - Japan</strong></td>
+                        <td>IBM</td>
+                        <td><span class="score">★ 3.3</span></td>
+                        <td><span class="badge">Tokyo, Japan</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/cybersecurity-remediation-engineer-japan-at-ibm-4458838967" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://jp.linkedin.com/jobs/view/devsecops-engineer%E3%80%90full-remote-in-japan-%E5%B9%B4%E5%8F%8E1000%E4%B8%87%E5%86%86%E3%80%91dx-saas-platform-at-gaidoor-recruit-4493260006" title="Double-click to mark complete">
+                        <td><strong>DevSecOps Engineer【Full Remote in Japan / 年収1000万円】DX SaaS Platform</strong></td>
+                        <td>GAIDOOR RECRUIT</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Japan</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/devsecops-engineer%E3%80%90full-remote-in-japan-%E5%B9%B4%E5%8F%8E1000%E4%B8%87%E5%86%86%E3%80%91dx-saas-platform-at-gaidoor-recruit-4493260006" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://jp.linkedin.com/jobs/view/cyber-security-specialist-at-teksystems-4494481625" title="Double-click to mark complete">
+                        <td><strong>Cyber Security Specialist</strong></td>
+                        <td>TEKsystems</td>
+                        <td><span class="score">★ 3.5</span></td>
+                        <td><span class="badge">Tokyo, Tokyo, Japan</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/cyber-security-specialist-at-teksystems-4494481625" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://jp.linkedin.com/jobs/view/solution-architect-security-at-f5-4494481693" title="Double-click to mark complete">
+                        <td><strong>Solution Architect - Security</strong></td>
+                        <td>F5</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Tokyo, Tokyo, Japan</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/solution-architect-security-at-f5-4494481693" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-cyber-security-engineer-w-m-d-cloud-at-ionos-4493004781" title="Double-click to mark complete">
+                        <td><strong>Senior Cyber Security Engineer (w/m/d) Cloud</strong></td>
+                        <td>IONOS</td>
+                        <td><span class="score">★ 3.0</span></td>
+                        <td><span class="badge">Berlin, Berlin, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-cyber-security-engineer-w-m-d-cloud-at-ionos-4493004781" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-cyber-security-engineer-f-m-d-cloud-at-ionos-4493017844" title="Double-click to mark complete">
+                        <td><strong>Senior Cyber Security Engineer (f/m/d) Cloud</strong></td>
+                        <td>IONOS</td>
+                        <td><span class="score">★ 3.0</span></td>
+                        <td><span class="badge">Berlin, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-cyber-security-engineer-f-m-d-cloud-at-ionos-4493017844" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-security-engineer-m-f-d-at-yoummday-4480259738" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer (m/f/d)</strong></td>
+                        <td>yoummday</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Berlin, Berlin, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-security-engineer-m-f-d-at-yoummday-4480259738" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-security-engineer-m-f-d-at-yoummday-4480266348" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer (m/f/d)</strong></td>
+                        <td>yoummday</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Munich, Bavaria, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-security-engineer-m-f-d-at-yoummday-4480266348" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-security-engineer-m-w-d-at-proact-deutschland-4494359628" title="Double-click to mark complete">
+                        <td><strong>(Senior) Security Engineer (m/w/d)</strong></td>
+                        <td>Proact Deutschland</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Cologne, North Rhine-Westphalia, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-security-engineer-m-w-d-at-proact-deutschland-4494359628" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/security-engineer-%E2%80%93-saas-remote-m-w-d-schwerpunkt-cloud-security-vulnerability-management-at-cendas-4494760615" title="Double-click to mark complete">
+                        <td><strong>Security Engineer – SaaS / remote (m/w/d) Schwerpunkt Cloud Security & Vulnerability Management</strong></td>
+                        <td>CENDAS</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Bochum, North Rhine-Westphalia, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/security-engineer-%E2%80%93-saas-remote-m-w-d-schwerpunkt-cloud-security-vulnerability-management-at-cendas-4494760615" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-it-security-engineer-m-w-d-at-noris-network-ag-4494110658" title="Double-click to mark complete">
+                        <td><strong>(Senior) IT Security Engineer (m/w/d)</strong></td>
+                        <td>noris network AG</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Greater Nuremberg Metropolitan Area</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-it-security-engineer-m-w-d-at-noris-network-ag-4494110658" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/secops-engineer-m-w-d-%E2%80%93-digitalisierungsprojekte-im-%C3%B6ffentlichen-sektor-at-spot-solutions-gmbh-4494327039" title="Double-click to mark complete">
+                        <td><strong>SecOps Engineer (m/w/d) – Digitalisierungsprojekte im öffentlichen Sektor</strong></td>
+                        <td>Spot Solutions GmbH</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Mühltal, Hesse, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/secops-engineer-m-w-d-%E2%80%93-digitalisierungsprojekte-im-%C3%B6ffentlichen-sektor-at-spot-solutions-gmbh-4494327039" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/advanced-application-security-engineer-m-w-d-at-adorsys-4494121132" title="Double-click to mark complete">
+                        <td><strong>Advanced Application Security Engineer (m/w/d)</strong></td>
+                        <td>adorsys</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Greater Nuremberg Metropolitan Area</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/advanced-application-security-engineer-m-w-d-at-adorsys-4494121132" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/application-security-engineer-m-f-d-at-epg-ehrhardt-partner-group-4494147879" title="Double-click to mark complete">
+                        <td><strong>Application Security Engineer (m/f/d)</strong></td>
+                        <td>EPG Ehrhardt Partner Group</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Boppard, Rhineland-Palatinate, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/application-security-engineer-m-f-d-at-epg-ehrhardt-partner-group-4494147879" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/product-security-engineer-m-w-d-jobbird-com-at-jobster-4494399987" title="Double-click to mark complete">
+                        <td><strong>Product Security Engineer (m/w/d) - Jobbird.com</strong></td>
+                        <td>Jobster</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Herten, North Rhine-Westphalia, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/product-security-engineer-m-w-d-jobbird-com-at-jobster-4494399987" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/it-security-experte-schwerpunkt-anwendungsentwicklung-m-w-d-at-amprion-gmbh-4492691642" title="Double-click to mark complete">
+                        <td><strong>IT Security Experte Schwerpunkt Anwendungsentwicklung m/w/d</strong></td>
+                        <td>Amprion GmbH</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Pulheim, North Rhine-Westphalia, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/it-security-experte-schwerpunkt-anwendungsentwicklung-m-w-d-at-amprion-gmbh-4492691642" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/it-security-experte-schwerpunkt-devsecops-m-w-d-at-amprion-gmbh-4493003126" title="Double-click to mark complete">
+                        <td><strong>IT Security Experte Schwerpunkt DevSecOps m/w/d</strong></td>
+                        <td>Amprion GmbH</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Pulheim, North Rhine-Westphalia, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/it-security-experte-schwerpunkt-devsecops-m-w-d-at-amprion-gmbh-4493003126" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-ot-product-security-consultant-w-m-d-at-pwc-deutschland-4487901916" title="Double-click to mark complete">
+                        <td><strong>(Senior) OT / Product Security Consultant (w/m/d)</strong></td>
+                        <td>PwC Deutschland</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Stuttgart, Baden-Württemberg, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-ot-product-security-consultant-w-m-d-at-pwc-deutschland-4487901916" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://de.linkedin.com/jobs/view/senior-ot-product-security-consultant-w-m-d-at-pwc-deutschland-4487916264" title="Double-click to mark complete">
+                        <td><strong>(Senior) OT / Product Security Consultant (w/m/d)</strong></td>
+                        <td>PwC Deutschland</td>
+                        <td><span class="score">★ 3.6</span></td>
+                        <td><span class="badge">Berlin, Berlin, Germany</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-ot-product-security-consultant-w-m-d-at-pwc-deutschland-4487916264" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/devsecops-application-security-engineer-at-epergne-solutions-4494133084" title="Double-click to mark complete">
+                        <td><strong>DevSecOps Application Security Engineer</strong></td>
+                        <td>Epergne Solutions</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Abu Dhabi, Abu Dhabi Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/devsecops-application-security-engineer-at-epergne-solutions-4494133084" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-qashio-4494362804" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Qashio</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dubai, Dubai, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-qashio-4494362804" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-qashio-4494328225" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>Qashio</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dubai, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-qashio-4494328225" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/devsecops-application-security-engineer-at-epergne-solutions-4494135012" title="Double-click to mark complete">
+                        <td><strong>DevSecOps Application Security Engineer</strong></td>
+                        <td>Epergne Solutions</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Sharjah, Sharjah Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/devsecops-application-security-engineer-at-epergne-solutions-4494135012" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-appliedai-4494337384" title="Double-click to mark complete">
+                        <td><strong>Senior Security Engineer</strong></td>
+                        <td>AppliedAI</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Abu Dhabi, Abu Dhabi Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/senior-security-engineer-at-appliedai-4494337384" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/cybersecurity-engineer-at-quantumgate-4494153066" title="Double-click to mark complete">
+                        <td><strong>Cybersecurity Engineer</strong></td>
+                        <td>QuantumGate</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Abu Dhabi, Abu Dhabi Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/cybersecurity-engineer-at-quantumgate-4494153066" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/security-engineer-at-analog-4484660105" title="Double-click to mark complete">
+                        <td><strong>Security Engineer</strong></td>
+                        <td>Analog</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Abu Dhabi, Abu Dhabi Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/security-engineer-at-analog-4484660105" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/security-solutions-architect-at-qualys-4424361398" title="Double-click to mark complete">
+                        <td><strong>Security Solutions Architect</strong></td>
+                        <td>Qualys</td>
+                        <td><span class="score">★ 2.7</span></td>
+                        <td><span class="badge">Dubai, Dubai, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/security-solutions-architect-at-qualys-4424361398" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/senior-ai-security-penetration-testing-consultant-at-scc-services-romania-4494160128" title="Double-click to mark complete">
+                        <td><strong>Senior AI Security & Penetration Testing Consultant</strong></td>
+                        <td>SCC Services Romania</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Abu Dhabi Emirate, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/senior-ai-security-penetration-testing-consultant-at-scc-services-romania-4494160128" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://ae.linkedin.com/jobs/view/senior-cloud-security-engineer-at-property-finder-4494487600" title="Double-click to mark complete">
+                        <td><strong>Senior Cloud Security Engineer</strong></td>
+                        <td>Property Finder</td>
+                        <td><span class="score">N/A</span></td>
+                        <td><span class="badge">Dubai, Dubai, United Arab Emirates</span></td>
+                        <td><a href="https://ae.linkedin.com/jobs/view/senior-cloud-security-engineer-at-property-finder-4494487600" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr data-job-key="https://nz.linkedin.com/jobs/view/full-stack-engineer-web-frontend-oriented-%E2%80%94-ai-facial-recognition-identity-security-fully-remote-at-binance-4486027658" title="Double-click to mark complete">
+                        <td><strong>Full Stack Engineer (Web,Frontend Oriented) — AI Facial Recognition, Identity & Security (Fully Remote)</strong></td>
+                        <td>Binance</td>
+                        <td><span class="score">★ 3.1</span></td>
+                        <td><span class="badge">New Zealand</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/full-stack-engineer-web-frontend-oriented-%E2%80%94-ai-facial-recognition-identity-security-fully-remote-at-binance-4486027658" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: DISCARDED JOBS -->
+        <div id="discardedTab" style="display: none;">
+            <p style="color:#94a3b8; font-size:0.9rem">Roles excluded because title lacks security, vulnerability, red team, or threat (e.g. Solutions Architect, generic Software Engineer).</p>
+            <div class="table-scroll">
+            <table id="discardedTable">
+                <thead>
+                    <tr>
+                        <th>Filtered Job Title
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('discardedTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Company
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('discardedTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Location
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('discardedTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Exclusion Reason
+                            <div class="col-filter-box">
+                                <input type="text" class="col-search" placeholder="Search..." oninput="filterTable('discardedTable')">
+                                <div class="ms-wrap">
+                                    <button type="button" class="ms-toggle" onclick="toggleMulti(this)">All values</button>
+                                    <div class="ms-panel"></div>
+                                </div>
+                            </div>
+                        </th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td><strong>Sr Advanced Cyb Sec Archt/Engr</strong></td>
+                        <td>Honeywell Technologies</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sr-advanced-cyb-sec-archt-engr-at-honeywell-technologies-4494107340" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>IAM Identity Access Management</strong></td>
+                        <td>Weekday AI (YC W21)</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/iam-identity-access-management-at-weekday-ai-yc-w21-4494165933" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Executive - Markets - National - CBS - C&I - Digital Products & Solutions - Bangalore</strong></td>
+                        <td>EY</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/executive-markets-national-cbs-c-i-digital-products-solutions-bangalore-at-ey-4477581005" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Assurance Engineering Platform Developer LMTS</strong></td>
+                        <td>Salesforce</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/assurance-engineering-platform-developer-lmts-at-salesforce-4485945664" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>ITSM (IT Service Management)</strong></td>
+                        <td>Ascendion</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/itsm-it-service-management-at-ascendion-4494386496" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Professional Services Engineer</strong></td>
+                        <td>Xploreteq</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/professional-services-engineer-at-xploreteq-4491928120" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>AI-SSDLC - Manager</strong></td>
+                        <td>Deloitte</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/ai-ssdlc-manager-at-deloitte-4441166971" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Advanced Engineer Cloud [T500-31011]</strong></td>
+                        <td>Albertsons Companies India</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/advanced-engineer-cloud-t500-31011-at-albertsons-companies-india-4494109876" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Sr Engineer - Captive Operations</strong></td>
+                        <td>Tata Communications</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sr-engineer-captive-operations-at-tata-communications-4477522227" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>SailPoint</strong></td>
+                        <td>Artech Infosystem Private Limited</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sailpoint-at-artech-infosystem-private-limited-4494768459" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Principal Engineer Software (Platform Software, NGFW) - NetSec</strong></td>
+                        <td>Palo Alto Networks</td>
+                        <td><span class="badge">Bengaluru East, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/principal-engineer-software-platform-software-ngfw-netsec-at-palo-alto-networks-4356033782" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>SIEM Content Development Specialist - VOIS</strong></td>
+                        <td>VOIS</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/siem-content-development-specialist-vois-at-vois-4485505427" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Saviynt Developer</strong></td>
+                        <td>Teamware Solutions</td>
+                        <td><span class="badge">Greater Bengaluru Area</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/saviynt-developer-at-teamware-solutions-4494488195" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>OKTA L3 Support Lead & SME</strong></td>
+                        <td>Kyndryl India</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/okta-l3-support-lead-sme-at-kyndryl-india-4493991645" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Sys. Integration Sr. Specialist Advisor_Cloud Policy</strong></td>
+                        <td>NTT DATA North America</td>
+                        <td><span class="badge">Bangalore Urban, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sys-integration-sr-specialist-advisor-cloud-policy-at-ntt-data-north-america-4494154520" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Sr. Staff Software Development Engineer</strong></td>
+                        <td>Zscaler</td>
+                        <td><span class="badge">Bengaluru East, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sr-staff-software-development-engineer-at-zscaler-4494166365" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Cloud Network Engineer</strong></td>
+                        <td>Aviatrix</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-cloud-network-engineer-at-aviatrix-4494706902" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Staff Software Engineer - Marketplace</strong></td>
+                        <td>SentinelOne</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/staff-software-engineer-marketplace-at-sentinelone-4494168214" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer - F5 BIG-IP (LTM/GTM/DNS/WAF) and AVI Load Balancers</strong></td>
+                        <td>Wells Fargo</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-software-engineer-f5-big-ip-ltm-gtm-dns-waf-and-avi-load-balancers-at-wells-fargo-4477408358" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Systems Engineer I</strong></td>
+                        <td>Riskonnect, Inc.</td>
+                        <td><span class="badge">Bagalur, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/systems-engineer-i-at-riskonnect-inc-4494166782" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>L3 SOC Analyst</strong></td>
+                        <td>UST</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/l3-soc-analyst-at-ust-4475694596" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>PlainID Sr Consultant</strong></td>
+                        <td>Artech Infosystem Private Limited</td>
+                        <td><span class="badge">Bengaluru, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/plainid-sr-consultant-at-artech-infosystem-private-limited-4494777050" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Managed Services TDR  Pod - Senior Associate -Cyber Managed services -Consult</strong></td>
+                        <td>PwC Acceleration Center India</td>
+                        <td><span class="badge">Bengaluru East, Karnataka, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/managed-services-tdr-pod-senior-associate-cyber-managed-services-consult-at-pwc-acceleration-center-india-4484668740" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>AVP DSPM Engineer</strong></td>
+                        <td>LPL Financial Global Capability Center</td>
+                        <td><span class="badge">Greater Hyderabad Area</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/avp-dspm-engineer-at-lpl-financial-global-capability-center-4494113415" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Cloud Engineer III [T500-31033]</strong></td>
+                        <td>McDonald's Global Office in India</td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/cloud-engineer-iii-t500-31033-at-mcdonald-s-global-office-in-india-4494142549" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Palo Alto Firewall Engineer, Level 2</strong></td>
+                        <td>Flexiple</td>
+                        <td><span class="badge">Hyderabad, Telangana, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/palo-alto-firewall-engineer-level-2-at-flexiple-4494165165" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Engineer - Full Stack</strong></td>
+                        <td>Sahaj Software</td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-engineer-full-stack-at-sahaj-software-4494120487" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Full Stack Engineer</strong></td>
+                        <td>Ciklum India</td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-full-stack-engineer-at-ciklum-india-4494181443" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Full Stack Engineer</strong></td>
+                        <td>Recro</td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/full-stack-engineer-at-recro-4494306979" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>AI Full-Stack Developer, Maintenance & Enhancements</strong></td>
+                        <td>Flexiple</td>
+                        <td><span class="badge">Chennai, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/ai-full-stack-developer-maintenance-enhancements-at-flexiple-4494458659" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer</strong></td>
+                        <td>Responsive</td>
+                        <td><span class="badge">Greater Coimbatore Area</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-software-engineer-at-responsive-4493009964" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>GMS-Senior-Airlock</strong></td>
+                        <td>EY</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/gms-senior-airlock-at-ey-4484673045" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Full Stack Developer</strong></td>
+                        <td>RedTaxi</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/senior-full-stack-developer-at-redtaxi-4494341656" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Technical Lead – Java & AWS</strong></td>
+                        <td>RedTaxi</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/technical-lead-%E2%80%93-java-aws-at-redtaxi-4494328254" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>GenAI Engineer/ Senior Engineer</strong></td>
+                        <td>Orion Innovation</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/genai-engineer-senior-engineer-at-orion-innovation-4460008229" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Associate Developer - IT</strong></td>
+                        <td>Flex</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/associate-developer-it-at-flex-4494707899" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Software Engineer (AI Training)</strong></td>
+                        <td>Alignerr</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/software-engineer-ai-training-at-alignerr-4494460995" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Sr. Architect</strong></td>
+                        <td>Cognizant</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/sr-architect-at-cognizant-4494339217" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Tech S And T - AI Integration Engineer Senior - GDSN02</strong></td>
+                        <td>EY</td>
+                        <td><span class="badge">Coimbatore, Tamil Nadu, India</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://in.linkedin.com/jobs/view/tech-s-and-t-ai-integration-engineer-senior-gdsn02-at-ey-4492685908" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Cyber Hygiene Analyst (Specialist)</strong></td>
+                        <td>Commerz Global Service Solutions</td>
+                        <td><span class="badge">Petaling Jaya, Selangor, Malaysia</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/cyber-hygiene-analyst-specialist-at-commerz-global-service-solutions-4492406293" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Staff Software Development Engineer</strong></td>
+                        <td>AMD</td>
+                        <td><span class="badge">Georgetown, Penang, Malaysia</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://my.linkedin.com/jobs/view/staff-software-development-engineer-at-amd-4476069921" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Information protection engineer - data loss prevention</strong></td>
+                        <td>ASML</td>
+                        <td><span class="badge">Veldhoven, North Brabant, Netherlands</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/information-protection-engineer-data-loss-prevention-at-asml-4486163806" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Cyber Defense Specialist</strong></td>
+                        <td>Tergos</td>
+                        <td><span class="badge">Amsterdam, North Holland, Netherlands</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nl.linkedin.com/jobs/view/cyber-defense-specialist-at-tergos-4494332054" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Identity & Access Management Specialist</strong></td>
+                        <td>Fruition Group Ireland</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/identity-access-management-specialist-at-fruition-group-ireland-4494382800" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior AWS Cloud Platform Engineer</strong></td>
+                        <td>Stelfox Tech Recruitment</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-aws-cloud-platform-engineer-at-stelfox-tech-recruitment-4494133838" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior DevOps Engineer</strong></td>
+                        <td>Jobgether</td>
+                        <td><span class="badge">Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-devops-engineer-at-jobgether-4494381138" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Cloud Engineer</strong></td>
+                        <td>Sprinklr</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-cloud-engineer-at-sprinklr-4414646135" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>IDAM Lead</strong></td>
+                        <td>Primark</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/idam-lead-at-primark-4494139108" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Site Reliability Engineer - Platform Reliability</strong></td>
+                        <td>Elastic</td>
+                        <td><span class="badge">Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/site-reliability-engineer-platform-reliability-at-elastic-4494470855" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>VP- Azure Cloud Platform Engineer (Terraform/ K8S/ IaC)</strong></td>
+                        <td>Robert Walters</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/vp-azure-cloud-platform-engineer-terraform-k8s-iac-at-robert-walters-4493019997" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Professional Services Consultant - German speaking</strong></td>
+                        <td>Proofpoint</td>
+                        <td><span class="badge">Cork, County Cork, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-professional-services-consultant-german-speaking-at-proofpoint-4494127217" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Cyber Fusion Operations Analyst</strong></td>
+                        <td>State Street</td>
+                        <td><span class="badge">Kilkenny, County Kilkenny, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/cyber-fusion-operations-analyst-at-state-street-4494180715" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>GRC Pre-Sales Consultant / Solutions Engineer – EMEA</strong></td>
+                        <td>Vanta</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/grc-pre-sales-consultant-solutions-engineer-%E2%80%93-emea-at-vanta-4484376411" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Network Specialist</strong></td>
+                        <td>Cpl</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/network-specialist-at-cpl-4477693418" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Software Engineer</strong></td>
+                        <td>NetApp</td>
+                        <td><span class="badge">County Cork, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/software-engineer-at-netapp-4484620082" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Kubernetes Engineer</strong></td>
+                        <td>InterSystems</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/kubernetes-engineer-at-intersystems-4467397924" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior SRE (Site Reliability Engineer)</strong></td>
+                        <td>Jabil</td>
+                        <td><span class="badge">Blanchardstown, Fingal, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-sre-site-reliability-engineer-at-jabil-4492563888" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Application Support Engineer</strong></td>
+                        <td>Verizon</td>
+                        <td><span class="badge">Limerick, County Limerick, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/application-support-engineer-at-verizon-4494169065" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Linux Systems Administrator / IT Support Engineer</strong></td>
+                        <td>Morgan McKinley</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/linux-systems-administrator-it-support-engineer-at-morgan-mckinley-4494738103" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Microsoft 365 & Power Platform Lead</strong></td>
+                        <td>I.T. Alliance Resourcing Services</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-microsoft-365-power-platform-lead-at-i-t-alliance-resourcing-services-4494144456" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Incident Response Manager - Product & Engineering</strong></td>
+                        <td>Anthropic</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/incident-response-manager-product-engineering-at-anthropic-4485775999" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior .Net Developer</strong></td>
+                        <td>Solas IT Recruitment</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-net-developer-at-solas-it-recruitment-4494106813" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Back End Developer (AI Infrastructure)</strong></td>
+                        <td>Alignerr</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/back-end-developer-ai-infrastructure-at-alignerr-4494475355" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior AI Architect - Enterprise for Advisory and Professional Services</strong></td>
+                        <td>Hewlett Packard Enterprise</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-ai-architect-enterprise-for-advisory-and-professional-services-at-hewlett-packard-enterprise-4494186392" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer - Webex</strong></td>
+                        <td>Cisco</td>
+                        <td><span class="badge">Galway, County Galway, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-software-engineer-webex-at-cisco-4494480816" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Junior Penetration Test Coordinator - Financial Services, Dublin 2</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/junior-penetration-test-coordinator-financial-services-dublin-2-at-it-search-4494167337" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Solutions Engineer (Upmarket, Pre-Sales) - EMEA</strong></td>
+                        <td>Vanta</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/solutions-engineer-upmarket-pre-sales-emea-at-vanta-4484367761" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>AWS DevOps Engineer – Dublin/Remote (2 days onsite pw)</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/aws-devops-engineer-%E2%80%93-dublin-remote-2-days-onsite-pw-at-it-search-4494153832" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Azure Engineer - Financial Services, Dublin 2</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-azure-engineer-financial-services-dublin-2-at-it-search-4494163367" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Software Architect – Dublin City (3 days onsite per week)</strong></td>
+                        <td>IT Search</td>
+                        <td><span class="badge">Dublin, County Dublin, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/software-architect-%E2%80%93-dublin-city-3-days-onsite-per-week-at-it-search-4494173187" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer</strong></td>
+                        <td>Nicoll Curtin</td>
+                        <td><span class="badge">Galway, County Galway, Ireland</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://ie.linkedin.com/jobs/view/senior-software-engineer-at-nicoll-curtin-4494146605" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>【研究開発】製品・サービスに関するサイバーセキュリティエンジニア を募集中！_デジタルインテリジェンス研究開発部開発2G</strong></td>
+                        <td>Mitsubishi Heavy Industries</td>
+                        <td><span class="badge">Hyogo, Japan</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/%E3%80%90%E7%A0%94%E7%A9%B6%E9%96%8B%E7%99%BA%E3%80%91%E8%A3%BD%E5%93%81%E3%83%BB%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E3%81%AB%E9%96%A2%E3%81%99%E3%82%8B%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E3%82%A8%E3%83%B3%E3%82%B8%E3%83%8B%E3%82%A2-%E3%82%92%E5%8B%9F%E9%9B%86%E4%B8%AD%EF%BC%81-%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB%E3%82%A4%E3%83%B3%E3%83%86%E3%83%AA%E3%82%B8%E3%82%A7%E3%83%B3%E3%82%B9%E7%A0%94%E7%A9%B6%E9%96%8B%E7%99%BA%E9%83%A8%E9%96%8B%E7%99%BA2g-at-mitsubishi-heavy-industries-4415344264" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>KANAMEL株式会社 ●【リモート可／ハイクラス】社内SE　システム部門 （インフラ／セキュリティ担当）(390950)</strong></td>
+                        <td>株式会社ギークリー（GEEKLY）</td>
+                        <td><span class="badge">Shinagawa-ku, Tokyo, Japan</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/kanamel%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE-%E2%97%8F%E3%80%90%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88%E5%8F%AF%EF%BC%8F%E3%83%8F%E3%82%A4%E3%82%AF%E3%83%A9%E3%82%B9%E3%80%91%E7%A4%BE%E5%86%85se%E3%80%80%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E9%83%A8%E9%96%80-%EF%BC%88%E3%82%A4%E3%83%B3%E3%83%95%E3%83%A9%EF%BC%8F%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E6%8B%85%E5%BD%93%EF%BC%89-390950-at-%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE%E3%82%AE%E3%83%BC%E3%82%AF%E3%83%AA%E3%83%BC%EF%BC%88geekly%EF%BC%89-4494482490" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>GO株式会社 ●【リモート可】シニアコーポレートエンジニア（ゼロトラスト推進）(464932)</strong></td>
+                        <td>株式会社ギークリー（GEEKLY）</td>
+                        <td><span class="badge">Minato, Tokyo, Japan</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/go%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE-%E2%97%8F%E3%80%90%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88%E5%8F%AF%E3%80%91%E3%82%B7%E3%83%8B%E3%82%A2%E3%82%B3%E3%83%BC%E3%83%9D%E3%83%AC%E3%83%BC%E3%83%88%E3%82%A8%E3%83%B3%E3%82%B8%E3%83%8B%E3%82%A2%EF%BC%88%E3%82%BC%E3%83%AD%E3%83%88%E3%83%A9%E3%82%B9%E3%83%88%E6%8E%A8%E9%80%B2%EF%BC%89-464932-at-%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE%E3%82%AE%E3%83%BC%E3%82%AF%E3%83%AA%E3%83%BC%EF%BC%88geekly%EF%BC%89-4494484542" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Systems Engineer (VLE) - Fukuoka</strong></td>
+                        <td>Fortinet</td>
+                        <td><span class="badge">Fukuoka, Japan</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/systems-engineer-vle-fukuoka-at-fortinet-4494129358" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Incident Response Sr. Consultant (インシデントレスポンスシニアコンサルタント) (Remote)</strong></td>
+                        <td>CrowdStrike</td>
+                        <td><span class="badge">Osaka, Japan</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://jp.linkedin.com/jobs/view/incident-response-sr-consultant-%E3%82%A4%E3%83%B3%E3%82%B7%E3%83%87%E3%83%B3%E3%83%88%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B9%E3%82%B7%E3%83%8B%E3%82%A2%E3%82%B3%E3%83%B3%E3%82%B5%E3%83%AB%E3%82%BF%E3%83%B3%E3%83%88-remote-at-crowdstrike-4458864911" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>(Senior) SOC Engineer (m/w/d)</strong></td>
+                        <td>CGI</td>
+                        <td><span class="badge">Cologne, North Rhine-Westphalia, Germany</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://de.linkedin.com/jobs/view/senior-soc-engineer-m-w-d-at-cgi-4486409249" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>AI Tech Lead, Agent Infrastructure & Reliability</strong></td>
+                        <td>FRAMECAD</td>
+                        <td><span class="badge">Auckland, Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/ai-tech-lead-agent-infrastructure-reliability-at-framecad-4494756168" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Full Stack Engineer</strong></td>
+                        <td>Levno</td>
+                        <td><span class="badge">Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-full-stack-engineer-at-levno-4494433480" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer - Product & Engineering</strong></td>
+                        <td>Halter</td>
+                        <td><span class="badge">Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-software-engineer-product-engineering-at-halter-4408648277" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Software Engineer</strong></td>
+                        <td>Propellerhead</td>
+                        <td><span class="badge">Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-software-engineer-at-propellerhead-4430848039" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Platform Engineer</strong></td>
+                        <td>Foodstuffs North Island Limited</td>
+                        <td><span class="badge">Auckland, Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-platform-engineer-at-foodstuffs-north-island-limited-4494763935" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Product/Software Engineer</strong></td>
+                        <td>Crimson Global Academy</td>
+                        <td><span class="badge">New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-product-software-engineer-at-crimson-global-academy-4494124670" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Lead Software Engineer</strong></td>
+                        <td>Z Energy NZ</td>
+                        <td><span class="badge">Wellington, Wellington, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/lead-software-engineer-at-z-energy-nz-4484915289" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Senior Cloud & Infrastructure Engineer</strong></td>
+                        <td>Southern Cross Health Insurance</td>
+                        <td><span class="badge">Auckland, Auckland, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/senior-cloud-infrastructure-engineer-at-southern-cross-health-insurance-4484620851" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Python Engineer</strong></td>
+                        <td>Kiwibank</td>
+                        <td><span class="badge">Wellington, Wellington, New Zealand</span></td>
+                        <td><span class="badge-danger">Title missing security/vulnerability/red team/threat keyword</span></td>
+                        <td><a href="https://nz.linkedin.com/jobs/view/python-engineer-at-kiwibank-4494770594" target="_blank">View Job &rarr;</a></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <script>
+            const jobHistory = (() => {
+                const el = document.getElementById('job-history');
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || '{}'); } catch (e) { return {}; }
+            })();
+
+            const COMPLETED_KEY = 'sjt-completed';
+            const COMPLETED_FILTER_KEY = 'sjt-completed-filter';
+
+            function loadCompleted() {
+                try {
+                    const raw = localStorage.getItem(COMPLETED_KEY);
+                    if (!raw) return {};
+                    const data = JSON.parse(raw);
+                    return (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            function saveCompleted(map) {
+                try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(map)); } catch (e) {}
+            }
+
+            function loadCompletedFilter() {
+                try {
+                    const mode = localStorage.getItem(COMPLETED_FILTER_KEY);
+                    return (mode === 'completed' || mode === 'both' || mode === 'incomplete') ? mode : 'incomplete';
+                } catch (e) {
+                    return 'incomplete';
+                }
+            }
+
+            function persistCompletedFilter(mode) {
+                try { localStorage.setItem(COMPLETED_FILTER_KEY, mode); } catch (e) {}
+            }
+
+            function currentCompletedFilter() {
+                const pressed = document.querySelector('#completedFilter [aria-pressed="true"]');
+                const mode = pressed && pressed.getAttribute('data-mode');
+                return (mode === 'completed' || mode === 'both' || mode === 'incomplete') ? mode : 'incomplete';
+            }
+
+            function paintCompleted() {
+                const map = loadCompleted();
+                const table = document.getElementById('jobsTable');
+                if (!table) return;
+                tableRows(table).forEach(row => {
+                    const key = row.getAttribute('data-job-key') || '';
+                    const done = !!(key && map[key]);
+                    row.classList.toggle('completed', done);
+                    row.title = done ? 'Double-click to mark incomplete' : 'Double-click to mark complete';
+                    let badge = row.querySelector('.done-badge');
+                    if (done && !badge) {
+                        const strong = row.querySelector('strong');
+                        if (strong) {
+                            badge = document.createElement('span');
+                            badge.className = 'done-badge';
+                            badge.textContent = 'Done';
+                            strong.insertAdjacentElement('afterend', badge);
+                        }
+                    } else if (!done && badge) {
+                        badge.remove();
+                    }
+                });
+            }
+
+            function setCompletedFilter(mode) {
+                const wrap = document.getElementById('completedFilter');
+                if (!wrap) return;
+                wrap.querySelectorAll('.completed-chip').forEach(btn => {
+                    btn.setAttribute('aria-pressed', btn.getAttribute('data-mode') === mode ? 'true' : 'false');
+                });
+                persistCompletedFilter(mode);
+                filterTable('jobsTable');
+            }
+
+            function initCompletedFilter() {
+                const wrap = document.getElementById('completedFilter');
+                if (!wrap) return;
+                const mode = loadCompletedFilter();
+                wrap.querySelectorAll('.completed-chip').forEach(btn => {
+                    btn.setAttribute('aria-pressed', btn.getAttribute('data-mode') === mode ? 'true' : 'false');
+                    btn.addEventListener('click', () => setCompletedFilter(btn.getAttribute('data-mode')));
+                });
+            }
+
+            function initCompletedToggle() {
+                const tbody = document.querySelector('#jobsTable tbody');
+                if (!tbody || tbody.dataset.completeBound) return;
+                tbody.dataset.completeBound = '1';
+                tbody.addEventListener('dblclick', event => {
+                    if (event.target.closest('a')) return;
+                    const row = event.target.closest('tr');
+                    if (!row) return;
+                    const key = row.getAttribute('data-job-key') || '';
+                    if (!key) return;
+                    const map = loadCompleted();
+                    if (map[key]) delete map[key];
+                    else map[key] = true;
+                    saveCompleted(map);
+                    paintCompleted();
+                    filterTable('jobsTable');
+                });
+            }
+
+            function cellText(cell) {
+                if (!cell) return '';
+                const strong = cell.querySelector('strong');
+                const source = strong || cell;
+                return (source.innerText || '').replace(/\s+/g, ' ').trim();
+            }
+
+            function switchTab(tabId, btn) {
+                document.getElementById('activeTab').style.display = tabId === 'activeTab' ? 'block' : 'none';
+                document.getElementById('discardedTab').style.display = tabId === 'discardedTab' ? 'block' : 'none';
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            function toggleMulti(btn) {
+                const wrap = btn.closest('.ms-wrap');
+                document.querySelectorAll('.ms-wrap.open').forEach(w => {
+                    if (w !== wrap) w.classList.remove('open');
+                });
+                wrap.classList.toggle('open');
+            }
+
+            function tableRows(table) {
+                return Array.from(table.querySelectorAll('tbody tr')).filter(row => row.cells.length > 1);
+            }
+
+            function currentFilterMode(box) {
+                return box.dataset.filterMode === 'exclude' ? 'exclude' : 'include';
+            }
+
+            function ensureFilterMode(box, tableId) {
+                if (box.querySelector('.ms-mode')) return;
+                const modeBar = document.createElement('div');
+                modeBar.className = 'ms-mode';
+                ['include', 'exclude'].forEach(name => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'ms-mode-btn' + (name === 'include' ? ' active' : '');
+                    btn.setAttribute('data-mode', name);
+                    btn.textContent = name === 'include' ? 'Include' : 'Exclude';
+                    btn.addEventListener('click', () => {
+                        box.dataset.filterMode = name;
+                        modeBar.querySelectorAll('.ms-mode-btn').forEach(b => {
+                            b.classList.toggle('active', b.getAttribute('data-mode') === name);
+                        });
+                        const wrap = box.querySelector('.ms-wrap');
+                        if (wrap) wrap.classList.toggle('exclude', name === 'exclude');
+                        filterTable(tableId);
+                    });
+                    modeBar.appendChild(btn);
+                });
+                const wrap = box.querySelector('.ms-wrap');
+                box.insertBefore(modeBar, wrap);
+            }
+
+            function initFilters(tableId) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const rows = tableRows(table);
+                table.querySelectorAll('thead th').forEach((th, col) => {
+                    const box = th.querySelector('.col-filter-box');
+                    if (!box) return;
+                    ensureFilterMode(box, tableId);
+                    const panel = box.querySelector('.ms-panel');
+                    panel.innerHTML = '';
+                    const values = Array.from(new Set(rows.map(row => cellText(row.cells[col])).filter(Boolean)))
+                        .sort((a, b) => a.localeCompare(b));
+                    values.forEach(value => {
+                        const label = document.createElement('label');
+                        label.className = 'ms-option';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        checkbox.addEventListener('change', () => filterTable(tableId));
+                        const span = document.createElement('span');
+                        span.textContent = value;
+                        label.appendChild(checkbox);
+                        label.appendChild(span);
+                        panel.appendChild(label);
+                    });
+                });
+            }
+
+            function filterTable(tableId) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const specs = [];
+                table.querySelectorAll('thead th').forEach((th, col) => {
+                    const box = th.querySelector('.col-filter-box');
+                    if (!box) return;
+                    const query = (box.querySelector('.col-search').value || '').trim().toLowerCase();
+                    const selected = Array.from(box.querySelectorAll('.ms-panel input:checked')).map(input => input.value);
+                    const mode = currentFilterMode(box);
+                    const toggle = box.querySelector('.ms-toggle');
+                    const wrap = box.querySelector('.ms-wrap');
+                    if (wrap) wrap.classList.toggle('exclude', mode === 'exclude');
+                    if (selected.length) {
+                        toggle.textContent = selected.length + (mode === 'exclude' ? ' excluded' : ' selected');
+                    } else {
+                        toggle.textContent = mode === 'exclude' ? 'Exclude none' : 'All values';
+                    }
+                    specs.push({ col, query, selected, mode });
+                });
+                const completedMode = tableId === 'jobsTable' ? currentCompletedFilter() : 'both';
+                tableRows(table).forEach(row => {
+                    let show = specs.every(spec => {
+                        const text = cellText(row.cells[spec.col]);
+                        if (spec.query && !text.toLowerCase().includes(spec.query)) return false;
+                        if (spec.selected.length) {
+                            const hit = spec.selected.includes(text);
+                            if (spec.mode === 'exclude' ? hit : !hit) return false;
+                        }
+                        return true;
+                    });
+                    if (completedMode !== 'both') {
+                        const isCompleted = row.classList.contains('completed');
+                        if (completedMode === 'incomplete' && isCompleted) show = false;
+                        if (completedMode === 'completed' && !isCompleted) show = false;
+                    }
+                    row.style.display = show ? '' : 'none';
+                });
+            }
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function getSelectedDates() {
+                return Array.from(document.querySelectorAll('.date-chip[aria-pressed="true"]'))
+                    .map(btn => btn.getAttribute('data-date'))
+                    .filter(Boolean)
+                    .sort()
+                    .reverse();
+            }
+
+            function mergeJobs(history, dates, key) {
+                const byLink = {};
+                dates.slice().sort().forEach(date => {
+                    const day = (history && history[date]) || {};
+                    (day[key] || []).forEach(job => {
+                        const link = job.link || '';
+                        if (!link) return;
+                        const prev = byLink[link];
+                        const seen = prev && prev.seen_on ? prev.seen_on.slice() : [];
+                        if (seen.indexOf(date) === -1) seen.push(date);
+                        seen.sort().reverse();
+                        byLink[link] = Object.assign({}, job, {
+                            run_date: date,
+                            seen_on: seen
+                        });
+                    });
+                });
+                return Object.values(byLink);
+            }
+
+            function dateBadge(job) {
+                const extra = (job.seen_on && job.seen_on.length > 1) ? (' +' + (job.seen_on.length - 1)) : '';
+                return '<span class="date-badge">' + escapeHtml(job.run_date || '') + extra + '</span>';
+            }
+
+            function renderMetrics(jobs) {
+                const grid = document.getElementById('metricsGrid');
+                if (!grid) return;
+                const counts = {};
+                jobs.forEach(job => {
+                    const loc = job.location || 'Unknown';
+                    counts[loc] = (counts[loc] || 0) + 1;
+                });
+                const entries = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+                if (!entries.length) {
+                    grid.innerHTML = '<div class="empty-state">No jobs for the selected dates.</div>';
+                    return;
+                }
+                grid.innerHTML = entries.map(loc => (
+                    '<div class="metric-card"><div class="loc-name">' + escapeHtml(loc) +
+                    '</div><div class="loc-count">' + counts[loc] + '</div></div>'
+                )).join('');
+            }
+
+            function renderActiveRows(jobs) {
+                const tbody = document.querySelector('#jobsTable tbody');
+                if (!tbody) return;
+                if (!jobs.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active roles for the selected dates.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = jobs.map(job => (
+                    '<tr data-job-key="' + escapeHtml(job.link) + '" title="Double-click to mark complete"><td><strong>' + escapeHtml(job.title) + '</strong>' + dateBadge(job) +
+                    '</td><td>' + escapeHtml(job.company) +
+                    '</td><td><span class="score">' + escapeHtml(job.blind_score) +
+                    '</span></td><td><span class="badge">' + escapeHtml(job.location) +
+                    '</span></td><td><a href="' + escapeHtml(job.link) + '" target="_blank" rel="noopener noreferrer">View Job &rarr;</a></td></tr>'
+                )).join('');
+            }
+
+            function renderDiscardedRows(jobs) {
+                const tbody = document.querySelector('#discardedTable tbody');
+                if (!tbody) return;
+                if (!jobs.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No discarded roles for the selected dates.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = jobs.map(job => (
+                    '<tr><td><strong>' + escapeHtml(job.title) + '</strong>' + dateBadge(job) +
+                    '</td><td>' + escapeHtml(job.company) +
+                    '</td><td><span class="badge">' + escapeHtml(job.location) +
+                    '</span></td><td><span class="badge-danger">' + escapeHtml(job.reason) +
+                    '</span></td><td><a href="' + escapeHtml(job.link) + '" target="_blank" rel="noopener noreferrer">View Job &rarr;</a></td></tr>'
+                )).join('');
+            }
+
+            function resetColFilters(tableId) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                table.querySelectorAll('.col-search').forEach(input => { input.value = ''; });
+                table.querySelectorAll('.ms-panel').forEach(panel => { panel.innerHTML = ''; });
+                table.querySelectorAll('.ms-toggle').forEach(btn => { btn.textContent = 'All values'; });
+                table.querySelectorAll('.ms-wrap').forEach(wrap => wrap.classList.remove('exclude'));
+                table.querySelectorAll('.col-filter-box').forEach(box => { box.dataset.filterMode = 'include'; });
+                table.querySelectorAll('.ms-mode-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-mode') === 'include');
+                });
+            }
+
+            function applyDateSelection() {
+                if (!jobHistory) return;
+                const dates = getSelectedDates();
+                const jobs = mergeJobs(jobHistory, dates, 'jobs');
+                const discarded = mergeJobs(jobHistory, dates, 'discarded');
+                renderActiveRows(jobs);
+                renderDiscardedRows(discarded);
+                renderMetrics(jobs);
+                const activeBtn = document.getElementById('activeTabBtn');
+                const discardedBtn = document.getElementById('discardedTabBtn');
+                if (activeBtn) activeBtn.textContent = 'Active Security Roles (' + jobs.length + ')';
+                if (discardedBtn) discardedBtn.textContent = 'Discarded Roles (' + discarded.length + ')';
+                const status = document.getElementById('dateStatus');
+                if (status) {
+                    status.textContent = dates.length
+                        ? ('Showing ' + dates.join(', ') + ' · ' + jobs.length + ' roles')
+                        : 'No dates selected';
+                }
+                resetColFilters('jobsTable');
+                resetColFilters('discardedTable');
+                initFilters('jobsTable');
+                initFilters('discardedTable');
+                paintCompleted();
+                filterTable('jobsTable');
+            }
+
+            function initDateFilter() {
+                if (!jobHistory) return;
+                document.querySelectorAll('.date-chip').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const pressed = btn.getAttribute('aria-pressed') === 'true';
+                        btn.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+                        applyDateSelection();
+                    });
+                });
+                const applyBtn = document.getElementById('dateApply');
+                if (applyBtn) {
+                    applyBtn.addEventListener('click', () => {
+                        const fromVal = (document.getElementById('dateFrom').value || '');
+                        const toVal = (document.getElementById('dateTo').value || '');
+                        if (!fromVal || !toVal) return;
+                        const start = fromVal <= toVal ? fromVal : toVal;
+                        const end = fromVal <= toVal ? toVal : fromVal;
+                        document.querySelectorAll('.date-chip').forEach(btn => {
+                            const day = btn.getAttribute('data-date') || '';
+                            btn.setAttribute('aria-pressed', (day >= start && day <= end) ? 'true' : 'false');
+                        });
+                        applyDateSelection();
+                    });
+                }
+                applyDateSelection();
+            }
+
+            document.addEventListener('click', event => {
+                if (!event.target.closest('.col-filter-box')) {
+                    document.querySelectorAll('.ms-wrap.open').forEach(wrap => wrap.classList.remove('open'));
+                }
+            });
+
+            initCompletedFilter();
+            initCompletedToggle();
+            if (jobHistory) {
+                initDateFilter();
+            } else {
+                initFilters('jobsTable');
+                initFilters('discardedTable');
+                paintCompleted();
+                filterTable('jobsTable');
+            }
+        </script>
+    </body>
+    </html>
+    
